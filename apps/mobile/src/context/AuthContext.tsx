@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import * as SecureStore from 'expo-secure-store';
 import api, { setOnAuthExpired } from '../services/api';
 import { disconnectSocket } from '../services/socket';
+import { registerForPushNotifications } from '../services/notifications';
 
 interface User {
   _id: string;
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (savedToken && savedUser) {
         setToken(savedToken);
         setUser(JSON.parse(savedUser));
+        registerForPushNotifications().catch(() => {});
       }
     } catch {
       // Ignore errors
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await SecureStore.setItemAsync('user', JSON.stringify(userData));
     setToken(newToken);
     setUser(userData);
+    registerForPushNotifications().catch(() => {});
   };
 
   const register = async (data: { name: string; email: string; password: string; phone: string }) => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import api from '../services/api';
 
 export default function ReviewsScreen() {
@@ -7,8 +8,16 @@ export default function ReviewsScreen() {
   const [comment, setComment] = useState('');
   const [myReviews, setMyReviews] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubscriber, setIsSubscriber] = useState<boolean | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    api.get('/client/subscriptions/mine').then((res) => {
+      const subs = res.data.data || [];
+      const hasActive = subs.some((s: any) => s.status === 'ACTIVE' || s.status === 'PENDING_ACTIVATION');
+      setIsSubscriber(hasActive);
+    }).catch(() => setIsSubscriber(false));
+
     api.get('/client/reviews/mine').then((res) => setMyReviews(res.data.data || [])).catch(() => {});
   }, []);
 
@@ -45,6 +54,27 @@ export default function ReviewsScreen() {
     </View>
   );
 
+  if (isSubscriber === null) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!isSubscriber) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.lockIcon}>&#128274;</Text>
+        <Text style={styles.lockTitle}>Reviews Locked</Text>
+        <Text style={styles.lockSubtitle}>Subscribe to a plan to write and view reviews</Text>
+        <TouchableOpacity style={styles.subscribeButton} onPress={() => router.push('/(tabs)/payment' as any)}>
+          <Text style={styles.subscribeText}>Subscribe Now</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.form}>
@@ -53,6 +83,7 @@ export default function ReviewsScreen() {
         <TextInput
           style={styles.textArea}
           placeholder="Share your experience..."
+          placeholderTextColor="#9CA3AF"
           value={comment}
           onChangeText={setComment}
           multiline
@@ -93,6 +124,19 @@ export default function ReviewsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
+  centerContainer: { flex: 1, backgroundColor: '#F8F9FA', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  loadingText: { fontSize: 16, color: '#9CA3AF' },
+  lockIcon: { fontSize: 48, marginBottom: 16 },
+  lockTitle: { fontSize: 22, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
+  lockSubtitle: { fontSize: 14, color: '#6B7280', textAlign: 'center', marginBottom: 24 },
+  subscribeButton: {
+    backgroundColor: '#00B090',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+  },
+  subscribeText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
   form: { backgroundColor: '#FFF', padding: 16, margin: 16, borderRadius: 12, gap: 12 },
   formTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
   stars: { flexDirection: 'row', gap: 8, justifyContent: 'center' },

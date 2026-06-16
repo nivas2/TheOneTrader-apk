@@ -1,0 +1,41 @@
+FROM eclipse-temurin:17-jdk
+
+# Install Android SDK command line tools
+RUN apt-get update && apt-get install -y wget unzip && \
+    mkdir -p /opt/android-sdk/cmdline-tools && \
+    wget -q "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -O /tmp/cmdtools.zip && \
+    unzip -q /tmp/cmdtools.zip -d /opt/android-sdk/cmdline-tools && \
+    mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest && \
+    rm /tmp/cmdtools.zip
+
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/34.0.0:${PATH}"
+
+# Accept licenses and install SDK components
+RUN yes | sdkmanager --licenses > /dev/null 2>&1 && \
+    sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+WORKDIR /app
+COPY . .
+
+# Create gradle files
+RUN mkdir -p gradle/wrapper && \
+    echo 'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.7-bin.zip' > gradle/wrapper/gradle-wrapper.properties && \
+    echo 'distributionBase=GRADLE_USER_HOME' >> gradle/wrapper/gradle-wrapper.properties && \
+    echo 'distributionPath=wrapper/dists' >> gradle/wrapper/gradle-wrapper.properties && \
+    echo 'zipStoreBase=GRADLE_USER_HOME' >> gradle/wrapper/gradle-wrapper.properties && \
+    echo 'zipStorePath=wrapper/dists' >> gradle/wrapper/gradle-wrapper.properties
+
+# Install gradle
+RUN wget -q "https://services.gradle.org/distributions/gradle-8.7-bin.zip" -O /tmp/gradle.zip && \
+    mkdir -p /opt/gradle && \
+    unzip -qo /tmp/gradle.zip -d /opt/gradle && \
+    rm /tmp/gradle.zip
+
+ENV PATH="/opt/gradle/gradle-8.7/bin:${PATH}"
+
+# Build
+RUN gradle assembleRelease --no-daemon
+
+CMD ["cp", "-r", "app/build/outputs/apk/release/", "/output/"]

@@ -62,6 +62,7 @@ export default function ForgotPasswordScreen() {
             <TextInput
               style={styles.input}
               placeholder="Email"
+              placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -81,12 +82,14 @@ export default function ForgotPasswordScreen() {
               keyboardType="number-pad"
               maxLength={6}
               placeholder="000000"
+              placeholderTextColor="#9CA3AF"
               textAlign="center"
             />
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.passwordInput}
                 placeholder="New Password (min 6 chars)"
+                placeholderTextColor="#9CA3AF"
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry={!showPassword}

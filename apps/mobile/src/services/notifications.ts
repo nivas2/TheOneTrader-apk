@@ -41,10 +41,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
-    });
-    const token = tokenData.data;
+    const tokenData = await Notifications.getDevicePushTokenAsync();
+    const token = tokenData.data as string;
 
     // Register token with backend
     await api.post('/auth/device-token', { deviceToken: token }).catch(() => {});

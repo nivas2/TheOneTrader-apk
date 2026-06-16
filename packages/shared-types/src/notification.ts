@@ -1,0 +1,33 @@
+// Customer notification types
+export const NOTIFICATION_TYPES = {
+  SIGNAL_NEW: 'SIGNAL_NEW',
+  SIGNAL_STATUS_UPDATE: 'SIGNAL_STATUS_UPDATE',
+  SUBSCRIPTION_APPROVED: 'SUBSCRIPTION_APPROVED',
+  SUBSCRIPTION_REJECTED: 'SUBSCRIPTION_REJECTED',
+  PAYMENT_CONFIRMED: 'PAYMENT_CONFIRMED',
+  CUSTOM_MESSAGE: 'CUSTOM_MESSAGE',
+  MARKET_ALERT: 'MARKET_ALERT',
+  // Admin notification types
+  ADMIN_NEW_PAYMENT: 'ADMIN_NEW_PAYMENT',
+  ADMIN_NEW_LEAD: 'ADMIN_NEW_LEAD',
+  ADMIN_NEW_USER: 'ADMIN_NEW_USER',
+} as const;
+
+export type NotificationType = (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
+
+// Deep-link map: notification type → route path
+export const NOTIFICATION_DEEP_LINKS: Record<string, string> = {
+  [NOTIFICATION_TYPES.SIGNAL_NEW]: '/signals',
+  [NOTIFICATION_TYPES.SIGNAL_STATUS_UPDATE]: '/signals',
+  [NOTIFICATION_TYPES.SUBSCRIPTION_APPROVED]: '/payment',
+  [NOTIFICATION_TYPES.SUBSCRIPTION_REJECTED]: '/payment',
+  [NOTIFICATION_TYPES.PAYMENT_CONFIRMED]: '/payment',
+  [NOTIFICATION_TYPES.CUSTOM_MESSAGE]: '/signals',
+  [NOTIFICATION_TYPES.MARKET_ALERT]: '/signals',
+  // Admin deep links
+  [NOTIFICATION_TYPES.ADMIN_NEW_PAYMENT]: '/admin/payments',
+  [NOTIFICATION_TYPES.ADMIN_NEW_LEAD]: '/admin/dashboard',
+  [NOTIFICATION_TYPES.ADMIN_NEW_USER]: '/admin/users',
+};
+
+export type RecipientType = 'all' | 'segment' | 'individual' | 'admins';

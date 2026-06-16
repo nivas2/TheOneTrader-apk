@@ -136,6 +136,7 @@ export default function ProfileScreen() {
             <TextInput
               style={styles.passwordInput}
               placeholder="Current Password"
+              placeholderTextColor="#9CA3AF"
               value={currentPassword}
               onChangeText={setCurrentPassword}
               secureTextEntry={!showCurrentPassword}
@@ -148,6 +149,7 @@ export default function ProfileScreen() {
             <TextInput
               style={styles.passwordInput}
               placeholder="New Password (min 6 chars)"
+              placeholderTextColor="#9CA3AF"
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry={!showNewPassword}

@@ -41,11 +41,11 @@ export default function RegisterScreen() {
         <Text style={styles.subtitle}>Create your account</Text>
 
         <View style={styles.form}>
-          <TextInput style={styles.input} placeholder="Full Name" value={name} onChangeText={setName} />
-          <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-          <TextInput style={styles.input} placeholder="Phone Number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#9CA3AF" value={name} onChangeText={setName} />
+          <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#9CA3AF" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          <TextInput style={styles.input} placeholder="Phone Number" placeholderTextColor="#9CA3AF" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           <View style={styles.passwordContainer}>
-            <TextInput style={styles.passwordInput} placeholder="Password (min 6 chars)" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
+            <TextInput style={styles.passwordInput} placeholder="Password (min 6 chars)" placeholderTextColor="#9CA3AF" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
               <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
