@@ -36,6 +36,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [fcmToken, setFcmToken] = useState(null);
   const [authToken, setAuthToken] = useState(null);
+  const notificationSetupInProgress = useRef(false);
+  const fcmTokenRef = useRef(null);
 
   // Register device token with server
   const registerDeviceToken = useCallback(async (auth, device) => {
@@ -72,50 +74,56 @@ export default function App() {
 
   // Setup notification channel (required for Android 13+) and get FCM token
   const setupNotifications = useCallback(async (showAlertOnDeny = true) => {
-    if (!Device.isDevice) {
-      console.log('Push notifications require a physical device');
-      return;
-    }
+    // Prevent concurrent calls — native FCM module crashes if called simultaneously
+    if (notificationSetupInProgress.current) return fcmTokenRef.current;
+    if (fcmTokenRef.current) return fcmTokenRef.current;
+    if (!Device.isDevice) return;
 
-    // Create notification channels (required on Android 13+ before requesting permissions)
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('signals', {
-        name: 'Trading Signals',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#00B090',
-        sound: 'default',
-      });
-      await Notifications.setNotificationChannelAsync('general', {
-        name: 'General Notifications',
-        importance: Notifications.AndroidImportance.HIGH,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#00B090',
-        sound: 'default',
-      });
-    }
+    notificationSetupInProgress.current = true;
 
-    // Request permission
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-      if (showAlertOnDeny) {
-        showPermissionAlert();
-      }
-      return;
-    }
-
-    // Get native FCM token (NOT Expo push token)
     try {
+      // Create notification channels (required on Android 13+ before requesting permissions)
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('signals', {
+          name: 'Trading Signals',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#00B090',
+          sound: 'default',
+        });
+        await Notifications.setNotificationChannelAsync('general', {
+          name: 'General Notifications',
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#00B090',
+          sound: 'default',
+        });
+      }
+
+      // Request permission
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        if (showAlertOnDeny) {
+          showPermissionAlert();
+        }
+        return null;
+      }
+
+      // Get native FCM token (NOT Expo push token)
       const tokenData = await Notifications.getDevicePushTokenAsync();
+      fcmTokenRef.current = tokenData.data;
       setFcmToken(tokenData.data);
       return tokenData.data;
     } catch (e) {
-      console.log('Failed to get device push token:', e);
+      console.log('Notification setup error:', e);
+      return null;
+    } finally {
+      notificationSetupInProgress.current = false;
     }
   }, [showPermissionAlert]);
 
@@ -185,24 +193,17 @@ export default function App() {
   }, [authToken, fcmToken, registerDeviceToken]);
 
   // Handle messages from WebView (auth token extraction)
-  const onMessage = useCallback(async (event) => {
+  const onMessage = useCallback((event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'AUTH_TOKEN' && data.token) {
         setAuthToken(data.token);
-
-        // If we don't have FCM token yet, set up notifications now
-        if (!fcmToken) {
-          const token = await setupNotifications();
-          if (token) {
-            registerDeviceToken(data.token, token);
-          }
-        }
+        // Registration happens automatically via the useEffect that watches [authToken, fcmToken]
       }
     } catch (e) {
       // Not JSON or not our message — ignore
     }
-  }, [fcmToken, setupNotifications, registerDeviceToken]);
+  }, []);
 
   return (
     <View style={styles.container}>
