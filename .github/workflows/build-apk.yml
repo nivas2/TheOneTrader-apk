@@ -6,6 +6,7 @@ on:
     branches: [master]
     paths:
       - 'apps/webview-app/**'
+      - '.github/workflows/build-apk.yml'
 
 jobs:
   build:
