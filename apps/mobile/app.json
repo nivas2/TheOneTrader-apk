@@ -24,9 +24,18 @@
       [
         "expo-notifications",
         {
-          "sounds": ["./assets/alarm.wav"]
+          "sounds": [
+            "./assets/alarm.wav"
+          ]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fa61167c-69a6-4c53-806b-a2fe60584772"
+      }
+    },
+    "owner": "nivas10.nani10"
   }
 }
