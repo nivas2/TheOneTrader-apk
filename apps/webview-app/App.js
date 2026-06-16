@@ -36,8 +36,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [fcmToken, setFcmToken] = useState(null);
   const [authToken, setAuthToken] = useState(null);
+  const [webviewKey, setWebviewKey] = useState(1);
   const notificationSetupInProgress = useRef(false);
   const fcmTokenRef = useRef(null);
+  const lastUrl = useRef('');
 
   // Register device token with server
   const registerDeviceToken = useCallback(async (auth, device) => {
@@ -72,17 +74,15 @@ export default function App() {
     );
   }, []);
 
-  // Setup notification channel (required for Android 13+) and get FCM token
+  // Setup notification channel and get FCM token — with mutex to prevent concurrent native calls
   const setupNotifications = useCallback(async (showAlertOnDeny = true) => {
-    // Prevent concurrent calls — native FCM module crashes if called simultaneously
     if (notificationSetupInProgress.current) return fcmTokenRef.current;
     if (fcmTokenRef.current) return fcmTokenRef.current;
-    if (!Device.isDevice) return;
+    if (!Device.isDevice) return null;
 
     notificationSetupInProgress.current = true;
 
     try {
-      // Create notification channels (required on Android 13+ before requesting permissions)
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('signals', {
           name: 'Trading Signals',
@@ -100,7 +100,6 @@ export default function App() {
         });
       }
 
-      // Request permission
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
       if (existingStatus !== 'granted') {
@@ -114,7 +113,6 @@ export default function App() {
         return null;
       }
 
-      // Get native FCM token (NOT Expo push token)
       const tokenData = await Notifications.getDevicePushTokenAsync();
       fcmTokenRef.current = tokenData.data;
       setFcmToken(tokenData.data);
@@ -127,16 +125,18 @@ export default function App() {
     }
   }, [showPermissionAlert]);
 
-  // Request notification permission immediately on app launch
+  // Delay notification setup — let app fully initialize first
   useEffect(() => {
-    setupNotifications(true);
+    const timer = setTimeout(() => {
+      setupNotifications(true);
+    }, 3000);
+    return () => clearTimeout(timer);
   }, [setupNotifications]);
 
   // Re-check permission when app comes back from Settings
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        // User might have just enabled notifications in Settings — re-check
         setupNotifications(false);
       }
     });
@@ -195,20 +195,30 @@ export default function App() {
   // Handle messages from WebView (auth token extraction)
   const onMessage = useCallback((event) => {
     try {
-      const data = JSON.parse(event.nativeEvent.data);
+      const msg = event?.nativeEvent?.data;
+      if (!msg || typeof msg !== 'string') return;
+      const data = JSON.parse(msg);
       if (data.type === 'AUTH_TOKEN' && data.token) {
         setAuthToken(data.token);
-        // Registration happens automatically via the useEffect that watches [authToken, fcmToken]
       }
     } catch (e) {
       // Not JSON or not our message — ignore
     }
   }, []);
 
+  // Handle WebView renderer crash — reload instead of force close
+  const onRenderProcessGone = useCallback((event) => {
+    const { didCrash } = event.nativeEvent;
+    console.log(`WebView renderer ${didCrash ? 'crashed' : 'was killed'}, reloading...`);
+    // Force re-mount the WebView by changing its key
+    setWebviewKey((prev) => prev + 1);
+  }, []);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#00B090" />
       <WebView
+        key={webviewKey}
         ref={webViewRef}
         source={{ uri: WEB_URL }}
         style={styles.webview}
@@ -225,13 +235,24 @@ export default function App() {
         onMessage={onMessage}
         onNavigationStateChange={(navState) => {
           setCanGoBack(navState.canGoBack);
-          // Re-inject auth token extraction on every navigation (handles login/logout)
-          if (webViewRef.current) {
-            webViewRef.current.injectJavaScript(INJECTED_JS);
+          // Only re-inject when URL actually changes (avoid duplicate injections during transitions)
+          if (navState.url && navState.url !== lastUrl.current) {
+            lastUrl.current = navState.url;
+            // Small delay to let the page settle before injecting
+            setTimeout(() => {
+              if (webViewRef.current) {
+                webViewRef.current.injectJavaScript(INJECTED_JS);
+              }
+            }, 500);
           }
         }}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
+        onRenderProcessGone={onRenderProcessGone}
+        onContentProcessDidTerminate={() => setWebviewKey((prev) => prev + 1)}
+        onError={(syntheticEvent) => {
+          console.log('WebView error:', syntheticEvent.nativeEvent);
+        }}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#00B090" />
