@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "TheOneTrade",
+    "slug": "theonetrade",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "theonetrade",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.theonetrade.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#00B090"
+      },
+      "permissions": [
+        "NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "sounds": ["./assets/alarm.wav"]
+        }
+      ]
+    ]
+  }
+}
