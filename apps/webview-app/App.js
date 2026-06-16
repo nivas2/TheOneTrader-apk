@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { StatusBar, StyleSheet, View, BackHandler, ActivityIndicator, Platform } from 'react-native';
+import { StatusBar, StyleSheet, View, BackHandler, ActivityIndicator, Platform, Alert, Linking, AppState } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
@@ -54,8 +54,24 @@ export default function App() {
     }
   }, []);
 
+  // Prompt user to open settings when permission is denied
+  const showPermissionAlert = useCallback(() => {
+    Alert.alert(
+      'Enable Notifications',
+      'You need to allow notifications to receive trading signals, payment updates, and important alerts. Please enable notifications in Settings.',
+      [
+        { text: 'Not Now', style: 'cancel' },
+        {
+          text: 'Open Settings',
+          onPress: () => Linking.openSettings(),
+        },
+      ],
+      { cancelable: false }
+    );
+  }, []);
+
   // Setup notification channel (required for Android 13+) and get FCM token
-  const setupNotifications = useCallback(async () => {
+  const setupNotifications = useCallback(async (showAlertOnDeny = true) => {
     if (!Device.isDevice) {
       console.log('Push notifications require a physical device');
       return;
@@ -87,7 +103,9 @@ export default function App() {
       finalStatus = status;
     }
     if (finalStatus !== 'granted') {
-      console.log('Notification permission not granted');
+      if (showAlertOnDeny) {
+        showPermissionAlert();
+      }
       return;
     }
 
@@ -99,7 +117,23 @@ export default function App() {
     } catch (e) {
       console.log('Failed to get device push token:', e);
     }
-  }, []);
+  }, [showPermissionAlert]);
+
+  // Request notification permission immediately on app launch
+  useEffect(() => {
+    setupNotifications(true);
+  }, [setupNotifications]);
+
+  // Re-check permission when app comes back from Settings
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        // User might have just enabled notifications in Settings — re-check
+        setupNotifications(false);
+      }
+    });
+    return () => subscription.remove();
+  }, [setupNotifications]);
 
   // Android back button handler
   useEffect(() => {
