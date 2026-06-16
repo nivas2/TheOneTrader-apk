@@ -22,7 +22,11 @@
       },
       "package": "com.theonetrade.webapp",
       "googleServicesFile": "./google-services.json",
-      "permissions": ["RECEIVE_BOOT_COMPLETED", "VIBRATE", "POST_NOTIFICATIONS"]
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
+      ]
     },
     "plugins": [
       [
@@ -35,9 +39,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "eca189e7-7f49-4821-9d64-25c9e2ff644f"
+        "projectId": "a316dff0-4a30-424c-9bc6-317978aa17cf"
       }
     },
-    "owner": "nivas10.nani10"
+    "owner": "theonetrades-team"
   }
 }

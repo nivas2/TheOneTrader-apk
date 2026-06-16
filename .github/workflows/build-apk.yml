@@ -1,0 +1,112 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/webview-app/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: apps/webview-app/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        working-directory: apps/webview-app
+        run: npm ci
+
+      - name: Generate native Android project
+        working-directory: apps/webview-app
+        run: npx expo prebuild --platform android --clean
+
+      - name: Generate release keystore
+        working-directory: apps/webview-app/android/app
+        run: |
+          keytool -genkeypair \
+            -v \
+            -storetype PKCS12 \
+            -keystore release.keystore \
+            -alias theonetrade \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass theonetrade123 \
+            -keypass theonetrade123 \
+            -dname "CN=TheOneTrade, OU=Mobile, O=TheOneTrade, L=India, ST=India, C=IN"
+
+      - name: Configure signing
+        working-directory: apps/webview-app/android
+        run: |
+          cat >> gradle.properties <<EOF
+          MYAPP_UPLOAD_STORE_FILE=release.keystore
+          MYAPP_UPLOAD_KEY_ALIAS=theonetrade
+          MYAPP_UPLOAD_STORE_PASSWORD=theonetrade123
+          MYAPP_UPLOAD_KEY_PASSWORD=theonetrade123
+          EOF
+
+          # Add signing config to app/build.gradle
+          sed -i '/signingConfigs {/,/}/ {
+            /debug {/i\
+            release {\
+                storeFile file("release.keystore")\
+                storePassword "theonetrade123"\
+                keyAlias "theonetrade"\
+                keyPassword "theonetrade123"\
+            }
+          }' app/build.gradle
+
+          # Use release signing for release build type
+          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' app/build.gradle
+
+      - name: Build APK
+        working-directory: apps/webview-app/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APK
+        run: |
+          mkdir -p artifacts
+          cp apps/webview-app/android/app/build/outputs/apk/release/app-release.apk artifacts/TheOneTrade.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheOneTrade-APK
+          path: artifacts/TheOneTrade.apk
+          retention-days: 90
+
+      - name: Upload to server
+        if: github.ref == 'refs/heads/master'
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          if [ -n "$SERVER_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SERVER_SSH_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            ssh-keyscan -H 168.144.93.138 >> ~/.ssh/known_hosts 2>/dev/null
+            scp artifacts/TheOneTrade.apk root@168.144.93.138:/var/www/theonetrade/uploads/app/TheOneTrade.apk
+            echo "APK uploaded to server at /downloads/TheOneTrade.apk"
+          else
+            echo "SERVER_SSH_KEY not set, skipping server upload"
+          fi
