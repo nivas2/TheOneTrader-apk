@@ -4,7 +4,7 @@ import { env } from '../config/env';
 import { getRedisClient } from '../config/redis';
 import { Subscription } from '../models/Subscription';
 import { User } from '../models/User';
-import { SOCKET_EVENTS, getRoomName, Segment } from '@theonetrade/shared-types';
+import { SOCKET_EVENTS, getRoomName } from '@theonetrade/shared-types';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -59,19 +59,17 @@ export function setupSocketHandlers(io: SocketServer): void {
         socket.join('admin');
       }
 
-      // Join ALL segment rooms if user has any active subscription
-      // This ensures they receive signals regardless of which segment they subscribed to
+      // Join only rooms matching user's active subscription segments
       try {
-        const hasActive = await Subscription.exists({
+        const activeSubs = await Subscription.find({
           userId: socket.userId,
           status: 'ACTIVE',
           expiresAt: { $gt: new Date() },
-        });
+        }).select('segment').lean();
 
-        if (hasActive) {
-          for (const seg of Object.values(Segment)) {
-            socket.join(getRoomName(seg));
-          }
+        const segments = [...new Set(activeSubs.map((s) => s.segment))];
+        for (const seg of segments) {
+          socket.join(getRoomName(seg));
         }
       } catch (error) {
         console.error('Error joining rooms:', error);

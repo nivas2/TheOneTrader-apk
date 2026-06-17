@@ -86,7 +86,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (socket && popupSignal) {
       socket.emit('acknowledge_signal_view', { signalId: popupSignal._id });
     }
-  }, [stopAlarm, socket, popupSignal]);
+    router.push('/signals');
+  }, [stopAlarm, socket, popupSignal, router]);
 
   // Close sidebar on route change
   useEffect(() => {

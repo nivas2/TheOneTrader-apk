@@ -26,9 +26,11 @@ export async function subscriptionGuard(req: AuthRequest, res: Response, next: N
 
     if (activeSubscriptions.length === 0) {
       (req as any).requiresPremium = true;
+      (req as any).subscribedSegments = [];
     } else {
       (req as any).requiresPremium = false;
       (req as any).activeSubscriptions = activeSubscriptions;
+      (req as any).subscribedSegments = [...new Set(activeSubscriptions.map((s) => s.segment))];
     }
 
     next();

@@ -80,7 +80,15 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response) 
 // Client: active signals
 router.get('/active', authMiddleware, subscriptionGuard, async (req: AuthRequest, res: Response) => {
   try {
-    const signals = await Signal.find({ status: 'ACTIVE' }).sort({ createdAt: -1 });
+    const isAdmin = req.userRole === 'ADMIN';
+    const subscribedSegments: string[] = (req as any).subscribedSegments || [];
+    const filter: any = { status: 'ACTIVE' };
+
+    if (!isAdmin && subscribedSegments.length > 0) {
+      filter.segment = { $in: subscribedSegments };
+    }
+
+    const signals = await Signal.find(filter).sort({ createdAt: -1 });
     const shouldMask = !!(req as any).requiresPremium;
     const data = signals.map((s) => maskSignalData(s.toObject(), shouldMask));
     res.json({ success: true, data });
@@ -93,7 +101,13 @@ router.get('/active', authMiddleware, subscriptionGuard, async (req: AuthRequest
 router.get('/history', authMiddleware, subscriptionGuard, async (req: AuthRequest, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
+    const isAdmin = req.userRole === 'ADMIN';
+    const subscribedSegments: string[] = (req as any).subscribedSegments || [];
     const filter: any = { status: { $ne: 'ACTIVE' } };
+
+    if (!isAdmin && subscribedSegments.length > 0) {
+      filter.segment = { $in: subscribedSegments };
+    }
 
     if (startDate) filter.createdAt = { ...filter.createdAt, $gte: new Date(startDate as string) };
     if (endDate) filter.createdAt = { ...filter.createdAt, $lte: new Date(endDate as string) };
@@ -130,10 +144,10 @@ router.put('/:id', authMiddleware, adminGuard, validate(updateStatusSchema), asy
       return;
     }
 
-    // Broadcast status update
+    // Broadcast status update to matching segment room + admin
     const io = (await import('../config/socket')).getIO();
-    const { SOCKET_EVENTS } = await import('@theonetrade/shared-types');
-    io.emit(SOCKET_EVENTS.SIGNAL_UPDATE, { signal: signal.toObject() });
+    const { SOCKET_EVENTS, getRoomName } = await import('@theonetrade/shared-types');
+    io.to(getRoomName(signal.segment)).to('admin').emit(SOCKET_EVENTS.SIGNAL_UPDATE, { signal: signal.toObject() });
 
     // Send FCM push for signal status update
     sendSignalStatusFCM(signal).catch(console.error);

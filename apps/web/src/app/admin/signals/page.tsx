@@ -21,7 +21,7 @@ export default function CreateSignalPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Plans for multi-select
-  const [plans, setPlans] = useState<{ _id: string; name: string }[]>([]);
+  const [plans, setPlans] = useState<{ _id: string; name: string; segment: string }[]>([]);
 
   // Dynamic segments/categories from config
   const [configSegments, setConfigSegments] = useState<{ key: string; label: string }[]>([]);
@@ -42,7 +42,7 @@ export default function CreateSignalPage() {
     }).catch(() => {});
     api.get('/plans').then((res) => {
       const activePlans = (res.data.data || []).filter((p: any) => p.isActive);
-      setPlans(activePlans.map((p: any) => ({ _id: p._id, name: p.name })));
+      setPlans(activePlans.map((p: any) => ({ _id: p._id, name: p.name, segment: p.segment })));
     }).catch(() => {});
   }, []);
 
@@ -59,6 +59,17 @@ export default function CreateSignalPage() {
   const categoryLabelMap: Record<string, string> = configCategories.length > 0
     ? Object.fromEntries(configCategories.map((c) => [c.key, c.label]))
     : SUBCATEGORY_LABELS;
+
+  // Filter plans by selected segment
+  const filteredPlans = plans.filter((p) => p.segment === formData.segment);
+
+  const handleSegmentChange = (seg: string) => {
+    setFormData((prev) => ({ ...prev, segment: seg, targetIntervals: [] }));
+    const matchingPlans = plans.filter((p) => p.segment === seg);
+    if (plans.length > 0 && matchingPlans.length === 0) {
+      toast.error(`No active plans for this segment`);
+    }
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -232,7 +243,7 @@ export default function CreateSignalPage() {
                   <button
                     key={s}
                     type="button"
-                    onClick={() => setFormData({ ...formData, segment: s })}
+                    onClick={() => handleSegmentChange(s)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       formData.segment === s
                         ? 'bg-brand-emerald text-white shadow-sm'
@@ -265,11 +276,11 @@ export default function CreateSignalPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Plans</label>
-              {plans.length === 0 ? (
-                <p className="text-sm text-gray-400">No active plans. Create plans in Plans &amp; Pricing first.</p>
+              {filteredPlans.length === 0 ? (
+                <p className="text-sm text-gray-400">No active plans for this segment. Create plans in Plans &amp; Pricing first.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {plans.map((plan) => (
+                  {filteredPlans.map((plan) => (
                     <button
                       key={plan._id}
                       type="button"

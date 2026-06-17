@@ -2,7 +2,7 @@ import { getIO } from '../config/socket';
 import { ISignalDocument } from '../models/Signal';
 import { Subscription } from '../models/Subscription';
 import { User } from '../models/User';
-import { SOCKET_EVENTS, getRoomName, Segment, NOTIFICATION_TYPES } from '@theonetrade/shared-types';
+import { SOCKET_EVENTS, getRoomName, NOTIFICATION_TYPES } from '@theonetrade/shared-types';
 import { sendPushToTokens } from './pushService';
 
 export async function broadcastSignal(signal: ISignalDocument): Promise<void> {
@@ -14,11 +14,8 @@ export async function broadcastSignal(signal: ISignalDocument): Promise<void> {
     duration: 30,
   };
 
-  // Broadcast to ALL segment rooms so every active subscriber receives
-  // the signal regardless of which segment they subscribed to
-  for (const seg of Object.values(Segment)) {
-    io.to(getRoomName(seg)).emit(SOCKET_EVENTS.SIGNAL_NEW, payload);
-  }
+  // Broadcast only to the matching segment room
+  io.to(getRoomName(signal.segment)).emit(SOCKET_EVENTS.SIGNAL_NEW, payload);
 
   // Also broadcast to admin room (without alarm)
   io.to('admin').emit(SOCKET_EVENTS.SIGNAL_NEW, {
@@ -30,10 +27,11 @@ export async function broadcastSignal(signal: ISignalDocument): Promise<void> {
 
 export async function sendSignalFCM(signal: ISignalDocument): Promise<void> {
   try {
-    // Send to ALL users with any active subscription (not just the signal's segment)
+    // Send only to users subscribed to the signal's segment
     const activeSubscriptions = await Subscription.find({
       status: 'ACTIVE',
       expiresAt: { $gt: new Date() },
+      segment: signal.segment,
     });
 
     const userIds = [...new Set(activeSubscriptions.map((s) => s.userId.toString()))];
@@ -74,10 +72,11 @@ const STATUS_LABELS: Record<string, string> = {
 
 export async function sendSignalStatusFCM(signal: ISignalDocument): Promise<void> {
   try {
-    // Send status updates to ALL active subscribers
+    // Send status updates only to users subscribed to the signal's segment
     const activeSubscriptions = await Subscription.find({
       status: 'ACTIVE',
       expiresAt: { $gt: new Date() },
+      segment: signal.segment,
     });
 
     const userIds = [...new Set(activeSubscriptions.map((s) => s.userId.toString()))];
