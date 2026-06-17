@@ -59,6 +59,7 @@ export default function AdminNotificationsPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
+  const [historyLimit, setHistoryLimit] = useState(10);
   const [historyTotal, setHistoryTotal] = useState(0);
 
   // Load templates and config on mount
@@ -75,9 +76,9 @@ export default function AdminNotificationsPage() {
   }, []);
 
   // Load history when tab switches
-  const fetchHistory = useCallback((page: number) => {
+  const fetchHistory = useCallback((page: number, limit: number) => {
     setHistoryLoading(true);
-    api.get(`/admin/notifications/history?page=${page}&limit=20`)
+    api.get(`/admin/notifications/history?page=${page}&limit=${limit}`)
       .then((res) => {
         setHistory(res.data.data || []);
         setHistoryTotal(res.data.pagination?.total || 0);
@@ -88,9 +89,9 @@ export default function AdminNotificationsPage() {
 
   useEffect(() => {
     if (activeTab === 'history') {
-      fetchHistory(historyPage);
+      fetchHistory(historyPage, historyLimit);
     }
-  }, [activeTab, historyPage, fetchHistory]);
+  }, [activeTab, historyPage, historyLimit, fetchHistory]);
 
   // Template selection
   const handleTemplateSelect = (templateId: string) => {
@@ -405,27 +406,66 @@ export default function AdminNotificationsPage() {
               </div>
 
               {/* Pagination */}
-              {historyTotal > 20 && (
-                <div className="flex justify-center gap-2 mt-4">
-                  <button
-                    onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
-                    disabled={historyPage === 1}
-                    className="px-3 py-1.5 text-sm border rounded disabled:opacity-40 hover:bg-gray-50"
-                  >
-                    Previous
-                  </button>
-                  <span className="px-3 py-1.5 text-sm text-gray-500">
-                    Page {historyPage} of {Math.ceil(historyTotal / 20)}
-                  </span>
-                  <button
-                    onClick={() => setHistoryPage((p) => p + 1)}
-                    disabled={historyPage >= Math.ceil(historyTotal / 20)}
-                    className="px-3 py-1.5 text-sm border rounded disabled:opacity-40 hover:bg-gray-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
+              {(() => {
+                const totalPages = Math.ceil(historyTotal / historyLimit);
+                const startItem = (historyPage - 1) * historyLimit + 1;
+                const endItem = Math.min(historyPage * historyLimit, historyTotal);
+                return (
+                  <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span>Showing {startItem}-{endItem} of {historyTotal}</span>
+                      <span className="text-gray-300">|</span>
+                      <label className="flex items-center gap-1">
+                        Rows:
+                        <select
+                          value={historyLimit}
+                          onChange={(e) => { setHistoryLimit(Number(e.target.value)); setHistoryPage(1); }}
+                          className="border border-gray-300 rounded px-1.5 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-emerald"
+                        >
+                          {[10, 20, 50].map((n) => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setHistoryPage(1)}
+                        disabled={historyPage === 1}
+                        className="px-2 py-1.5 text-sm border rounded disabled:opacity-30 hover:bg-gray-50"
+                        title="First page"
+                      >
+                        First
+                      </button>
+                      <button
+                        onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                        disabled={historyPage === 1}
+                        className="px-3 py-1.5 text-sm border rounded disabled:opacity-30 hover:bg-gray-50"
+                      >
+                        Prev
+                      </button>
+                      <span className="px-3 py-1.5 text-sm text-gray-600 font-medium">
+                        {historyPage} / {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setHistoryPage((p) => p + 1)}
+                        disabled={historyPage >= totalPages}
+                        className="px-3 py-1.5 text-sm border rounded disabled:opacity-30 hover:bg-gray-50"
+                      >
+                        Next
+                      </button>
+                      <button
+                        onClick={() => setHistoryPage(totalPages)}
+                        disabled={historyPage >= totalPages}
+                        className="px-2 py-1.5 text-sm border rounded disabled:opacity-30 hover:bg-gray-50"
+                        title="Last page"
+                      >
+                        Last
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
         </div>
