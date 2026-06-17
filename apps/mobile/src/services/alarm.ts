@@ -1,9 +1,11 @@
 import { Audio } from 'expo-av';
 
 let alarmSound: Audio.Sound | null = null;
-let alarmTimeout: ReturnType<typeof setTimeout> | null = null;
 
-export async function playAlarm(durationSeconds: number = 30): Promise<void> {
+export async function playAlarm(): Promise<void> {
+  // Don't start another alarm if one is already playing
+  if (alarmSound) return;
+
   try {
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
@@ -19,22 +21,12 @@ export async function playAlarm(durationSeconds: number = 30): Promise<void> {
 
     alarmSound = sound;
     await sound.playAsync();
-
-    // Auto-stop after duration
-    alarmTimeout = setTimeout(() => {
-      stopAlarm();
-    }, durationSeconds * 1000);
   } catch (error) {
     console.error('Failed to play alarm sound:', error);
   }
 }
 
 export async function stopAlarm(): Promise<void> {
-  if (alarmTimeout) {
-    clearTimeout(alarmTimeout);
-    alarmTimeout = null;
-  }
-
   if (alarmSound) {
     try {
       await alarmSound.stopAsync();

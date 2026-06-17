@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, RefreshControl, TouchableOpacity } fr
 import { useRouter } from 'expo-router';
 import api from '../services/api';
 import { connectSocket, getSocket } from '../services/socket';
-import { playAlarm, stopAlarm } from '../services/alarm';
+import { stopAlarm } from '../services/alarm';
 import SignalCard from '../components/SignalCard';
 
 function LockedSignalCard() {
@@ -96,9 +96,6 @@ export default function SignalsScreen() {
       socket.on('signal:new', (data: any) => {
         if (hasActiveSubscription) {
           setSignals((prev) => [data.signal, ...prev]);
-          if (data.alarm) {
-            playAlarm(data.duration || 30);
-          }
         } else {
           setLiveLockedCount((prev) => prev + 1);
         }
@@ -109,10 +106,6 @@ export default function SignalsScreen() {
           prev.map((s) => (s._id === data.signal._id ? data.signal : s))
             .filter((s) => s.status === 'ACTIVE')
         );
-      });
-
-      socket.on('silence_alarm', () => {
-        stopAlarm();
       });
     } catch {
       // Socket connection failed
