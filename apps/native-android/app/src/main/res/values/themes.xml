@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TheOneTrade" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_green</item>
+        <item name="colorPrimaryVariant">@color/brand_green</item>
+        <item name="android:statusBarColor">@color/brand_green</item>
+        <item name="android:windowBackground">@color/brand_green</item>
+    </style>
+</resources>

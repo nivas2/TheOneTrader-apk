@@ -5,22 +5,17 @@ on:
   push:
     branches: [master]
     paths:
-      - 'apps/webview-app/**'
+      - 'apps/native-android/**'
       - '.github/workflows/build-apk.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -32,42 +27,29 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install SDK platforms and build tools
-        run: |
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Install dependencies
-        working-directory: apps/webview-app
-        run: npm install
-
-      - name: Run expo prebuild
-        working-directory: apps/webview-app
-        run: npx expo prebuild --platform android --clean
-
-      - name: Make gradlew executable
-        working-directory: apps/webview-app/android
-        run: chmod +x gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
       - name: Build release APK
-        working-directory: apps/webview-app/android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        working-directory: apps/native-android
+        run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Find and rename APK
         run: |
           mkdir -p artifacts
-          APK=$(find apps/webview-app/android -name "*.apk" -path "*/release/*" | head -1)
+          APK=$(find apps/native-android -name "*.apk" -path "*/release/*" | head -1)
           if [ -z "$APK" ]; then
-            echo "No release APK found, trying debug..."
-            APK=$(find apps/webview-app/android -name "*.apk" | head -1)
-          fi
-          if [ -n "$APK" ]; then
-            cp "$APK" artifacts/TheOneTrade.apk
-            echo "APK found: $APK"
-            ls -lh artifacts/TheOneTrade.apk
-          else
-            echo "ERROR: No APK found!"
-            find apps/webview-app/android -name "*.apk" -o -name "*.aab" 2>/dev/null
+            echo "ERROR: No release APK found!"
+            find apps/native-android -name "*.apk" 2>/dev/null
             exit 1
           fi
+          cp "$APK" artifacts/TheOneTrade.apk
+          echo "APK: $APK"
+          ls -lh artifacts/TheOneTrade.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
