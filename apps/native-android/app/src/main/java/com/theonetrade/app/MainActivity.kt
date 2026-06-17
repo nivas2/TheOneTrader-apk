@@ -1,13 +1,17 @@
 package com.theonetrade.app
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -25,12 +29,18 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var progressBar: ProgressBar
+    private lateinit var prefs: SharedPreferences
+    private var fcmToken: String? = null
 
     companion object {
+        private const val TAG = "TheOneTrade"
         private const val WEB_URL = "https://pos.feastigo.com/theonetrade"
         private const val API_BASE = "https://pos.feastigo.com/api/v1"
         private const val USER_AGENT_SUFFIX = " TheOneTradeApp/1.0"
         private const val NOTIFICATION_PERMISSION_CODE = 1001
+        const val PREFS_NAME = "theonetrade_prefs"
+        const val PREF_AUTH_TOKEN = "auth_token"
+        const val PREF_FCM_TOKEN = "fcm_token"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +49,7 @@ class MainActivity : AppCompatActivity() {
 
         window.statusBarColor = ContextCompat.getColor(this, R.color.brand_green)
 
+        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         webView = findViewById(R.id.webView)
         progressBar = findViewById(R.id.progressBar)
 
@@ -54,7 +65,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // Handle notification tap when app is already open
         val deepLink = intent.getStringExtra("deep_link_url")
         if (deepLink != null) {
             webView.loadUrl(deepLink)
@@ -73,7 +83,6 @@ class MainActivity : AppCompatActivity() {
             allowContentAccess = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
-            // Append our app identifier to the default user agent
             userAgentString = "$userAgentString$USER_AGENT_SUFFIX"
         }
 
@@ -82,6 +91,9 @@ class MainActivity : AppCompatActivity() {
             setAcceptCookie(true)
             setAcceptThirdPartyCookies(webView, true)
         }
+
+        // Add JavaScript bridge so WebView can send auth token to native
+        webView.addJavascriptInterface(WebAppInterface(), "AndroidBridge")
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(
@@ -95,14 +107,17 @@ class MainActivity : AppCompatActivity() {
                     return false
                 }
 
-                // Open everything else (whatsapp://, mailto:, tel:, external https://)
-                // in the system browser / default handler — never crash the WebView
+                // Open everything else in system browser / default handler
                 try {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                } catch (_: Exception) {
-                    // No handler for this URL — silently ignore
-                }
+                } catch (_: Exception) {}
                 return true
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                // Inject JS to extract auth token from localStorage
+                injectTokenExtractor()
             }
 
             override fun onReceivedError(
@@ -126,6 +141,43 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * Injects JavaScript that reads the auth token from localStorage and sends
+     * it to the native side via AndroidBridge. Also monkey-patches localStorage
+     * setItem/removeItem to detect login and logout in real-time.
+     */
+    private fun injectTokenExtractor() {
+        val js = """
+            (function() {
+                try {
+                    var token = localStorage.getItem('token');
+                    if (token && window.AndroidBridge) {
+                        window.AndroidBridge.onAuthToken(token);
+                    }
+                    // Intercept localStorage writes to detect login/logout
+                    if (!window._androidBridgePatched) {
+                        window._androidBridgePatched = true;
+                        var origSetItem = localStorage.setItem.bind(localStorage);
+                        localStorage.setItem = function(key, value) {
+                            origSetItem(key, value);
+                            if (key === 'token' && window.AndroidBridge) {
+                                window.AndroidBridge.onAuthToken(value);
+                            }
+                        };
+                        var origRemoveItem = localStorage.removeItem.bind(localStorage);
+                        localStorage.removeItem = function(key) {
+                            origRemoveItem(key);
+                            if (key === 'token' && window.AndroidBridge) {
+                                window.AndroidBridge.onAuthTokenCleared();
+                            }
+                        };
+                    }
+                } catch(e) {}
+            })();
+        """.trimIndent()
+        webView.evaluateJavascript(js, null)
     }
 
     private fun setupBackNavigation() {
@@ -157,28 +209,67 @@ class MainActivity : AppCompatActivity() {
 
     private fun registerFCMToken() {
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
-            sendTokenToServer(token)
+            Log.d(TAG, "FCM token obtained")
+            fcmToken = token
+            prefs.edit().putString(PREF_FCM_TOKEN, token).apply()
+            // If we already have an auth token, register immediately
+            val authToken = prefs.getString(PREF_AUTH_TOKEN, null)
+            if (authToken != null) {
+                sendTokenToServer(token, authToken)
+            }
         }
     }
 
-    private fun sendTokenToServer(token: String) {
+    /** Called when JS bridge provides the auth token */
+    private fun onAuthTokenReceived(authToken: String) {
+        prefs.edit().putString(PREF_AUTH_TOKEN, authToken).apply()
+        // Now register FCM token with the server (we have auth)
+        val token = fcmToken ?: prefs.getString(PREF_FCM_TOKEN, null)
+        if (token != null) {
+            sendTokenToServer(token, authToken)
+        }
+    }
+
+    /** Called when user logs out */
+    private fun onAuthTokenCleared() {
+        prefs.edit().remove(PREF_AUTH_TOKEN).apply()
+    }
+
+    private fun sendTokenToServer(deviceToken: String, authToken: String) {
         Thread {
             try {
                 val url = java.net.URL("$API_BASE/auth/device-token")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.requestMethod = "POST"
                 conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Authorization", "Bearer $authToken")
                 conn.doOutput = true
                 conn.connectTimeout = 10_000
                 conn.readTimeout = 10_000
                 conn.outputStream.use { os ->
-                    os.write("""{"deviceToken":"$token","platform":"android"}""".toByteArray())
+                    os.write("""{"deviceToken":"$deviceToken","platform":"android"}""".toByteArray())
                 }
-                conn.responseCode // trigger request
+                val code = conn.responseCode
+                Log.d(TAG, "Device token registration: HTTP $code")
                 conn.disconnect()
-            } catch (_: Exception) {
-                // Will retry next app launch
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to register device token", e)
             }
         }.start()
+    }
+
+    /** JavaScript interface accessible from the WebView */
+    inner class WebAppInterface {
+        @JavascriptInterface
+        fun onAuthToken(token: String) {
+            Log.d(TAG, "Auth token received from WebView")
+            runOnUiThread { onAuthTokenReceived(token) }
+        }
+
+        @JavascriptInterface
+        fun onAuthTokenCleared() {
+            Log.d(TAG, "Auth token cleared (user logged out)")
+            runOnUiThread { this@MainActivity.onAuthTokenCleared() }
+        }
     }
 }
