@@ -9,6 +9,25 @@
       "client_info": {
         "mobilesdk_app_id": "1:520042053233:android:3029465e5aea9d789ee5d0",
         "android_client_info": {
+          "package_name": "com.theonetrade.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC196Kh8BBLIOCwiO-4FdvLTEXCNxjrj_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:520042053233:android:ab5b5c0a917b6cec9ee5d0",
+        "android_client_info": {
           "package_name": "com.theonetrade.webapp"
         }
       },

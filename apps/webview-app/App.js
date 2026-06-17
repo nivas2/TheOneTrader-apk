@@ -1,5 +1,16 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { StatusBar, StyleSheet, View, BackHandler, ActivityIndicator, Platform, Alert, Linking, AppState } from 'react-native';
+import React, { useRef, useState, useEffect, useCallback, Component } from 'react';
+import {
+  StatusBar,
+  StyleSheet,
+  View,
+  BackHandler,
+  ActivityIndicator,
+  Platform,
+  Alert,
+  AppState,
+  Linking,
+  Text,
+} from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
@@ -7,80 +18,74 @@ import * as Device from 'expo-device';
 const WEB_URL = 'https://pos.feastigo.com/theonetrade';
 const API_BASE = 'https://pos.feastigo.com/api/v1';
 
-// Show notification banners even when app is in foreground
+// Custom user agent — the web app checks for this to detect the native app
+const APP_USER_AGENT = 'TheOneTradeApp/1.0 Android';
+
+// Deep-link route map
+const ROUTE_MAP = {
+  SIGNAL_NEW: '/signals',
+  SIGNAL_STATUS_UPDATE: '/signals',
+  SUBSCRIPTION_APPROVED: '/payment',
+  SUBSCRIPTION_REJECTED: '/payment',
+  PAYMENT_CONFIRMED: '/payment',
+  CUSTOM_MESSAGE: '/signals',
+  MARKET_ALERT: '/signals',
+};
+
+// Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
+    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
   }),
 });
 
-// JS injected into WebView to extract auth token from localStorage
-const INJECTED_JS = `
-(function() {
-  try {
-    var token = localStorage.getItem('token');
-    if (token && window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_TOKEN', token: token }));
-    }
-  } catch(e) {}
-})();
-true;
-`;
+// Error Boundary — catches React render crashes so the app doesn't force-close
+class ErrorBoundary extends Component {
+  state = { hasError: false };
 
-export default function App() {
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.warn('ErrorBoundary caught:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F9FA' }}>
+          <Text style={{ fontSize: 16, color: '#333', textAlign: 'center', padding: 20 }}>
+            Something went wrong. Please restart the app.
+          </Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Check if a URL belongs to our web app
+function isInternalUrl(url) {
+  return url.startsWith('https://pos.feastigo.com') || url.startsWith('about:blank');
+}
+
+function MainApp() {
   const webViewRef = useRef(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [fcmToken, setFcmToken] = useState(null);
-  const [authToken, setAuthToken] = useState(null);
   const [webviewKey, setWebviewKey] = useState(1);
-  const notificationSetupInProgress = useRef(false);
-  const fcmTokenRef = useRef(null);
-  const lastUrl = useRef('');
+  const notificationSetupDone = useRef(false);
+  const setupInProgress = useRef(false);
 
-  // Register device token with server
-  const registerDeviceToken = useCallback(async (auth, device) => {
-    if (!auth || !device) return;
-    try {
-      await fetch(`${API_BASE}/auth/device-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${auth}`,
-        },
-        body: JSON.stringify({ deviceToken: device, platform: 'android' }),
-      });
-    } catch (e) {
-      console.log('Failed to register device token:', e);
-    }
-  }, []);
+  // Request notification permission and register for push
+  const setupNotifications = useCallback(async () => {
+    if (notificationSetupDone.current || setupInProgress.current) return;
+    if (!Device.isDevice) return;
 
-  // Prompt user to open settings when permission is denied
-  const showPermissionAlert = useCallback(() => {
-    Alert.alert(
-      'Enable Notifications',
-      'You need to allow notifications to receive trading signals, payment updates, and important alerts. Please enable notifications in Settings.',
-      [
-        { text: 'Not Now', style: 'cancel' },
-        {
-          text: 'Open Settings',
-          onPress: () => Linking.openSettings(),
-        },
-      ],
-      { cancelable: false }
-    );
-  }, []);
-
-  // Setup notification channel and get FCM token — with mutex to prevent concurrent native calls
-  const setupNotifications = useCallback(async (showAlertOnDeny = true) => {
-    if (notificationSetupInProgress.current) return fcmTokenRef.current;
-    if (fcmTokenRef.current) return fcmTokenRef.current;
-    if (!Device.isDevice) return null;
-
-    notificationSetupInProgress.current = true;
+    setupInProgress.current = true;
 
     try {
       if (Platform.OS === 'android') {
@@ -88,60 +93,104 @@ export default function App() {
           name: 'Trading Signals',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#00B090',
           sound: 'default',
+          lightColor: '#00B090',
         });
         await Notifications.setNotificationChannelAsync('general', {
           name: 'General Notifications',
           importance: Notifications.AndroidImportance.HIGH,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#00B090',
           sound: 'default',
         });
       }
 
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
+
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
+
       if (finalStatus !== 'granted') {
-        if (showAlertOnDeny) {
-          showPermissionAlert();
-        }
-        return null;
+        Alert.alert(
+          'Notifications Disabled',
+          'You won\'t receive trading signals and important updates. Please enable notifications in Settings.',
+          [
+            { text: 'Not Now', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+        return;
       }
 
-      const tokenData = await Notifications.getDevicePushTokenAsync();
-      fcmTokenRef.current = tokenData.data;
-      setFcmToken(tokenData.data);
-      return tokenData.data;
-    } catch (e) {
-      console.log('Notification setup error:', e);
-      return null;
-    } finally {
-      notificationSetupInProgress.current = false;
-    }
-  }, [showPermissionAlert]);
+      // FCM device token only — getExpoPushTokenAsync crashes standalone APKs
+      const deviceToken = await Notifications.getDevicePushTokenAsync();
 
-  // Delay notification setup — let app fully initialize first
+      if (deviceToken?.data) {
+        try {
+          await fetch(`${API_BASE}/auth/device-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              deviceToken: deviceToken.data,
+              platform: 'android',
+            }),
+          });
+        } catch (e) {
+          // Will retry next launch
+        }
+      }
+
+      notificationSetupDone.current = true;
+    } catch (error) {
+      console.warn('Notification setup failed:', error);
+    } finally {
+      setupInProgress.current = false;
+    }
+  }, []);
+
+  // Re-check permission when app returns from Settings
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active' && !notificationSetupDone.current) {
+        try {
+          const { status } = await Notifications.getPermissionsAsync();
+          if (status === 'granted') {
+            setupNotifications();
+          }
+        } catch (e) {
+          // Non-critical
+        }
+      }
+    });
+    return () => subscription?.remove();
+  }, [setupNotifications]);
+
+  // Setup notifications after delay — let app fully initialize first
   useEffect(() => {
     const timer = setTimeout(() => {
-      setupNotifications(true);
-    }, 3000);
+      setupNotifications();
+    }, 5000);
     return () => clearTimeout(timer);
   }, [setupNotifications]);
 
-  // Re-check permission when app comes back from Settings
+  // Handle notification tap
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        setupNotifications(false);
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      try {
+        const data = response.notification.request.content.data;
+        if (data?.type && ROUTE_MAP[data.type]) {
+          const targetUrl = WEB_URL + ROUTE_MAP[data.type];
+          webViewRef.current?.injectJavaScript(`window.location.href='${targetUrl}';true;`);
+        } else if (data?.url) {
+          webViewRef.current?.injectJavaScript(`window.location.href='${data.url}';true;`);
+        }
+      } catch (e) {
+        // Non-critical
       }
     });
-    return () => subscription.remove();
-  }, [setupNotifications]);
+    return () => subscription?.remove();
+  }, []);
 
   // Android back button handler
   useEffect(() => {
@@ -158,60 +207,23 @@ export default function App() {
     }
   }, [canGoBack]);
 
-  // Notification tap handler — deep-link based on notification type
-  useEffect(() => {
-    const DEEP_LINK_MAP = {
-      SIGNAL_NEW: '/theonetrade/signals',
-      SIGNAL_STATUS_UPDATE: '/theonetrade/signals',
-      SUBSCRIPTION_APPROVED: '/theonetrade/payment',
-      SUBSCRIPTION_REJECTED: '/theonetrade/payment',
-      PAYMENT_CONFIRMED: '/theonetrade/payment',
-      CUSTOM_MESSAGE: '/theonetrade/signals',
-      MARKET_ALERT: '/theonetrade/signals',
-    };
+  // Intercept all navigation requests — prevent crashes from unsupported URL schemes
+  const onShouldStartLoadWithRequest = useCallback((request) => {
+    const { url } = request;
 
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      if (webViewRef.current) {
-        const data = response.notification.request.content.data || {};
-        const type = data.type;
-        const url = data.url;
-        const targetPath = url || DEEP_LINK_MAP[type] || '/theonetrade/signals';
-        webViewRef.current.injectJavaScript(`
-          window.location.href = '${targetPath}';
-          true;
-        `);
-      }
-    });
-    return () => subscription.remove();
-  }, []);
-
-  // When both auth token and FCM token are available, register with server
-  useEffect(() => {
-    if (authToken && fcmToken) {
-      registerDeviceToken(authToken, fcmToken);
+    // Allow internal URLs to load normally inside WebView
+    if (isInternalUrl(url)) {
+      return true;
     }
-  }, [authToken, fcmToken, registerDeviceToken]);
 
-  // Handle messages from WebView (auth token extraction)
-  const onMessage = useCallback((event) => {
+    // For any external URL (whatsapp://, mailto:, tel:, intent://, https://other-domain, etc.)
+    // open it in the system browser/handler instead of crashing the WebView
     try {
-      const msg = event?.nativeEvent?.data;
-      if (!msg || typeof msg !== 'string') return;
-      const data = JSON.parse(msg);
-      if (data.type === 'AUTH_TOKEN' && data.token) {
-        setAuthToken(data.token);
-      }
+      Linking.openURL(url);
     } catch (e) {
-      // Not JSON or not our message — ignore
+      // Ignore if the URL can't be opened
     }
-  }, []);
-
-  // Handle WebView renderer crash — reload instead of force close
-  const onRenderProcessGone = useCallback((event) => {
-    const { didCrash } = event.nativeEvent;
-    console.log(`WebView renderer ${didCrash ? 'crashed' : 'was killed'}, reloading...`);
-    // Force re-mount the WebView by changing its key
-    setWebviewKey((prev) => prev + 1);
+    return false;
   }, []);
 
   return (
@@ -222,37 +234,28 @@ export default function App() {
         ref={webViewRef}
         source={{ uri: WEB_URL }}
         style={styles.webview}
+        userAgent={APP_USER_AGENT}
         javaScriptEnabled={true}
         domStorageEnabled={true}
         startInLoadingState={true}
         allowsBackForwardNavigationGestures={true}
-        mixedContentMode="never"
-        allowFileAccess={true}
-        mediaPlaybackRequiresUserAction={false}
+        setSupportMultipleWindows={false}
         thirdPartyCookiesEnabled={true}
-        userAgent="Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 TheOneTradeApp/1.0"
-        injectedJavaScript={INJECTED_JS}
-        onMessage={onMessage}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        mixedContentMode="compatibility"
+        originWhitelist={['https://*', 'http://*']}
+        onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onNavigationStateChange={(navState) => {
           setCanGoBack(navState.canGoBack);
-          // Only re-inject when URL actually changes (avoid duplicate injections during transitions)
-          if (navState.url && navState.url !== lastUrl.current) {
-            lastUrl.current = navState.url;
-            // Small delay to let the page settle before injecting
-            setTimeout(() => {
-              if (webViewRef.current) {
-                webViewRef.current.injectJavaScript(INJECTED_JS);
-              }
-            }, 500);
-          }
         }}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
-        onRenderProcessGone={onRenderProcessGone}
-        onContentProcessDidTerminate={() => setWebviewKey((prev) => prev + 1)}
         onError={(syntheticEvent) => {
-          console.log('WebView error:', syntheticEvent.nativeEvent);
+          console.warn('WebView error:', syntheticEvent.nativeEvent);
         }}
+        onRenderProcessGone={() => setWebviewKey((prev) => prev + 1)}
+        onContentProcessDidTerminate={() => setWebviewKey((prev) => prev + 1)}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#00B090" />
@@ -260,6 +263,14 @@ export default function App() {
         )}
       />
     </View>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
   );
 }
 

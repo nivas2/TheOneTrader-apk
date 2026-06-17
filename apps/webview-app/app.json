@@ -13,7 +13,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.theonetrade.webapp"
+      "bundleIdentifier": "com.theonetrade.webapp",
+      "newArchEnabled": false
     },
     "android": {
       "adaptiveIcon": {
@@ -22,18 +23,16 @@
       },
       "package": "com.theonetrade.webapp",
       "googleServicesFile": "./google-services.json",
-      "permissions": [
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "POST_NOTIFICATIONS"
-      ]
+      "permissions": ["POST_NOTIFICATIONS"],
+      "newArchEnabled": false
     },
     "plugins": [
       [
         "expo-notifications",
         {
-          "icon": "./assets/android-icon-monochrome.png",
-          "color": "#00B090"
+          "icon": "./assets/icon.png",
+          "color": "#00B090",
+          "defaultChannel": "signals"
         }
       ]
     ],

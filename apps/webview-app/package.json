@@ -3,18 +3,18 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
-    "expo": "~56.0.12",
-    "expo-device": "~56.0.4",
-    "expo-notifications": "~56.0.18",
-    "expo-status-bar": "~56.0.4",
-    "react": "19.2.3",
-    "react-native": "0.85.3",
-    "react-native-webview": "^13.16.1"
+    "expo": "~53.0.27",
+    "expo-device": "~7.1.4",
+    "expo-notifications": "~0.31.5",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-native": "0.79.1",
+    "react-native-webview": "13.13.5"
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "private": true
