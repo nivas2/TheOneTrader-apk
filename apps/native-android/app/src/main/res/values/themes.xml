@@ -6,4 +6,12 @@
         <item name="android:statusBarColor">@color/brand_green</item>
         <item name="android:windowBackground">@color/brand_green</item>
     </style>
+
+    <style name="Theme.SignalAlert" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:statusBarColor">#00000000</item>
+        <item name="android:navigationBarColor">#00000000</item>
+        <item name="colorPrimary">@color/brand_green</item>
+    </style>
 </resources>

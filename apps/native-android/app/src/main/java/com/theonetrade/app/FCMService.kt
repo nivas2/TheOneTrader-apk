@@ -62,6 +62,12 @@ class FCMService : FirebaseMessagingService() {
         val type = message.data["type"] ?: ""
         val url = message.data["url"]
 
+        // For SIGNAL_NEW: launch fullscreen alert with continuous alarm
+        if (type == "SIGNAL_NEW") {
+            launchSignalAlert(message.data)
+            return
+        }
+
         // Determine where to navigate when notification is tapped
         val deepLink = url
             ?: ROUTE_MAP[type]?.let { "$WEB_URL$it" }
@@ -72,6 +78,22 @@ class FCMService : FirebaseMessagingService() {
             CHANNEL_SIGNALS else CHANNEL_GENERAL
 
         showNotification(title, body, deepLink, channel)
+    }
+
+    private fun launchSignalAlert(data: Map<String, String>) {
+        val intent = Intent(this, SignalAlertActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(SignalAlertActivity.EXTRA_SIGNAL_ID, data["signalId"] ?: "")
+            putExtra(SignalAlertActivity.EXTRA_ACTION, data["action"] ?: "BUY")
+            putExtra(SignalAlertActivity.EXTRA_INSTRUMENT, data["instrument"] ?: "")
+            putExtra(SignalAlertActivity.EXTRA_SEGMENT, data["segment"] ?: "")
+            putExtra(SignalAlertActivity.EXTRA_ENTRY_MIN, data["entryMin"] ?: "")
+            putExtra(SignalAlertActivity.EXTRA_ENTRY_MAX, data["entryMax"] ?: "")
+            putExtra(SignalAlertActivity.EXTRA_TARGET, data["targetPrice"] ?: "")
+            putExtra(SignalAlertActivity.EXTRA_STOP_LOSS, data["stopLoss"] ?: "")
+            putExtra(SignalAlertActivity.EXTRA_NOTE, data["note"] ?: "")
+        }
+        startActivity(intent)
     }
 
     private fun showNotification(
