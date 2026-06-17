@@ -25,7 +25,12 @@ export function setupSocketHandlers(io: SocketServer): void {
 
       const decoded = jwt.verify(token, env.JWT_SECRET) as any;
       const redis = getRedisClient();
-      const storedSessionId = await redis.get(`session:${decoded.userId}`);
+      const platform = decoded.platform || 'web';
+      // Check platform-specific session first, fall back to legacy key
+      let storedSessionId = await redis.get(`session:${platform}:${decoded.userId}`);
+      if (!storedSessionId) {
+        storedSessionId = await redis.get(`session:${decoded.userId}`);
+      }
 
       if (!storedSessionId || storedSessionId !== decoded.sessionId) {
         // Proceed as unauthenticated rather than rejecting
