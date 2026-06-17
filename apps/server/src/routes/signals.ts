@@ -7,6 +7,7 @@ import { subscriptionGuard, maskSignalData } from '../middleware/subscriptionGua
 import { Signal } from '../models/Signal';
 import { Config } from '../models/Config';
 import { broadcastSignal, sendSignalFCM, sendSignalStatusFCM } from '../services/signalService';
+import { relaySignalToDebugger, relaySignalUpdateToDebugger } from '../services/debuggerRelay';
 
 const router = Router();
 
@@ -36,6 +37,7 @@ router.post('/', authMiddleware, adminGuard, validate(createSignalSchema), async
     const signal = await Signal.create(req.body);
     broadcastSignal(signal).catch(console.error);
     sendSignalFCM(signal).catch(console.error);
+    relaySignalToDebugger(signal.toObject());
 
     // Auto-save instrument name to config for future dropdown use
     Config.updateOne(
@@ -186,6 +188,7 @@ router.put('/:id', authMiddleware, adminGuard, validate(updateStatusSchema), asy
 
     // Send FCM push for signal status update
     sendSignalStatusFCM(signal).catch(console.error);
+    relaySignalUpdateToDebugger(signal._id.toString(), signal.status);
 
     res.json({ success: true, data: signal });
   } catch (error: any) {
