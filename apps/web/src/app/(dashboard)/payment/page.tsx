@@ -85,7 +85,14 @@ export default function PaymentPage() {
     setShowAllPlans(false);
   }, [filterSegment]);
 
-  const activeSub = mySubscriptions.find((s) => s.status === 'ACTIVE');
+  const activeSub = mySubscriptions.find(
+    (s) => s.status === 'ACTIVE' && s.expiresAt && new Date(s.expiresAt).getTime() > Date.now()
+  );
+  const expiredSub = !activeSub
+    ? mySubscriptions.find(
+        (s) => s.status === 'EXPIRED' || (s.status === 'ACTIVE' && s.expiresAt && new Date(s.expiresAt).getTime() <= Date.now())
+      )
+    : null;
   const pendingSubs = mySubscriptions.filter((s) => s.status === 'PENDING_APPROVAL' || s.status === 'PENDING_ACTIVATION');
 
   const totalHistoryPages = Math.ceil(mySubscriptions.length / HISTORY_PER_PAGE);
@@ -176,6 +183,29 @@ export default function PaymentPage() {
                   <p className="text-xs text-gray-500">Expires {formatDate(activeSub.expiresAt)}</p>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Expired / Renewal Banner */}
+      {expiredSub && pendingSubs.length === 0 && (
+        <div className="card mb-6 border-l-4 border-l-red-400 bg-red-50/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 bg-red-500 rounded-full" />
+                <h3 className="font-semibold text-text-heading">Subscription Expired</h3>
+              </div>
+              <p className="text-sm text-gray-600">
+                Your {SEGMENT_LABELS[expiredSub.segment] || expiredSub.segment} - {PLAN_TYPE_LABELS[expiredSub.planType] || expiredSub.planType} plan has expired.
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Expired on {formatDate(expiredSub.expiresAt || '')}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-semibold text-red-600">Renew now to continue receiving signals</p>
             </div>
           </div>
         </div>
