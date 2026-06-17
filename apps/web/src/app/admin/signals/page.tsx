@@ -34,7 +34,7 @@ export default function CreateSignalPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api.get('/admin/config').then((res) => {
+    api.get('/config').then((res) => {
       const data = res.data.data;
       setInstruments(data?.instruments || []);
       if (data?.segments?.length) setConfigSegments(data.segments);
@@ -89,7 +89,7 @@ export default function CreateSignalPage() {
 
   const saveInstruments = (updated: string[]) => {
     setInstruments(updated);
-    api.put('/admin/config', { instruments: updated }).catch(() => toast.error('Failed to save instruments'));
+    api.put('/config', { instruments: updated }).catch(() => toast.error('Failed to save instruments'));
   };
 
   const handleDeleteInstrument = (idx: number) => {

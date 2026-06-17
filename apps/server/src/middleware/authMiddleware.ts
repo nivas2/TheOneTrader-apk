@@ -13,6 +13,7 @@ interface JwtPayload {
   userId: string;
   role: string;
   sessionId: string;
+  platform?: string;
 }
 
 export async function optionalAuthMiddleware(req: AuthRequest, _res: Response, next: NextFunction): Promise<void> {
@@ -27,7 +28,12 @@ export async function optionalAuthMiddleware(req: AuthRequest, _res: Response, n
     const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 
     const redis = getRedisClient();
-    const storedSessionId = await redis.get(`session:${decoded.userId}`);
+    const platform = decoded.platform || 'web';
+    // Check platform-specific session first, fall back to legacy key
+    let storedSessionId = await redis.get(`session:${platform}:${decoded.userId}`);
+    if (!storedSessionId) {
+      storedSessionId = await redis.get(`session:${decoded.userId}`);
+    }
 
     if (storedSessionId && storedSessionId === decoded.sessionId) {
       req.userId = decoded.userId;
@@ -53,7 +59,12 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 
     const redis = getRedisClient();
-    const storedSessionId = await redis.get(`session:${decoded.userId}`);
+    const platform = decoded.platform || 'web';
+    // Check platform-specific session first, fall back to legacy key
+    let storedSessionId = await redis.get(`session:${platform}:${decoded.userId}`);
+    if (!storedSessionId) {
+      storedSessionId = await redis.get(`session:${decoded.userId}`);
+    }
 
     if (!storedSessionId || storedSessionId !== decoded.sessionId) {
       res.status(401).json({ success: false, error: 'Session expired - logged in elsewhere' });

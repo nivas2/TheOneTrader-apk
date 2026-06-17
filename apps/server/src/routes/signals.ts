@@ -40,7 +40,8 @@ router.post('/', authMiddleware, adminGuard, validate(createSignalSchema), async
     // Auto-save instrument name to config for future dropdown use
     Config.updateOne(
       {},
-      { $addToSet: { instruments: req.body.instrument.toUpperCase() } }
+      { $addToSet: { instruments: req.body.instrument.toUpperCase() } },
+      { upsert: true }
     ).catch(console.error);
 
     res.status(201).json({ success: true, data: signal });
@@ -56,12 +57,42 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response) 
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
 
-    const signals = await Signal.find()
+    const filter: any = {};
+
+    // Date filtering
+    if (req.query.startDate) {
+      filter.createdAt = { ...filter.createdAt, $gte: new Date(req.query.startDate as string) };
+    }
+    if (req.query.endDate) {
+      const endDate = new Date(req.query.endDate as string);
+      endDate.setHours(23, 59, 59, 999);
+      filter.createdAt = { ...filter.createdAt, $lte: endDate };
+    }
+
+    // Search filtering (instrument, segment, subCategory, action, status)
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search as string, 'i');
+      filter.$or = [
+        { instrument: searchRegex },
+        { segment: searchRegex },
+        { subCategory: searchRegex },
+        { action: searchRegex },
+        { status: searchRegex },
+        { 'targetIntervals': searchRegex },
+      ];
+    }
+
+    // Status filtering
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    const signals = await Signal.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Signal.countDocuments();
+    const total = await Signal.countDocuments(filter);
     // Admin sees unmasked data; others masked unless subscriptionGuard set requiresPremium=false
     const shouldMask = req.userRole === 'ADMIN' ? false : (req as any).requiresPremium !== false;
 
@@ -110,7 +141,11 @@ router.get('/history', authMiddleware, subscriptionGuard, async (req: AuthReques
     }
 
     if (startDate) filter.createdAt = { ...filter.createdAt, $gte: new Date(startDate as string) };
-    if (endDate) filter.createdAt = { ...filter.createdAt, $lte: new Date(endDate as string) };
+    if (endDate) {
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt = { ...filter.createdAt, $lte: end };
+    }
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;

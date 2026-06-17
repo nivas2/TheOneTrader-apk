@@ -49,16 +49,28 @@ export default function AdminNotificationsPage() {
   const [selectedUser, setSelectedUser] = useState<SearchUser | null>(null);
   const [sending, setSending] = useState(false);
 
+  // Dynamic segments from config
+  const [configSegments, setConfigSegments] = useState<{ key: string; label: string }[]>([]);
+  const segments = configSegments.length > 0
+    ? configSegments
+    : Object.entries(SEGMENT_LABELS).map(([key, label]) => ({ key, label }));
+
   // History state
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyTotal, setHistoryTotal] = useState(0);
 
-  // Load templates on mount
+  // Load templates and config on mount
   useEffect(() => {
     api.get('/admin/notifications/templates')
       .then((res) => setTemplates(res.data.data || []))
+      .catch(() => {});
+    api.get('/config')
+      .then((res) => {
+        const data = res.data.data;
+        if (data?.segments?.length) setConfigSegments(data.segments);
+      })
       .catch(() => {});
   }, []);
 
@@ -132,8 +144,15 @@ export default function AdminNotificationsPage() {
         recipientType,
         templateId: selectedTemplate || undefined,
       };
-      if (recipientType === 'segment') payload.segment = segment;
-      if (recipientType === 'individual') payload.userId = selectedUser?._id;
+      if (recipientType === 'segment') {
+        payload.segment = segment;
+        const segLabel = segments.find((s) => s.key === segment)?.label || segment;
+        payload.variables = { segment: segLabel };
+      }
+      if (recipientType === 'individual') {
+        payload.userId = selectedUser?._id;
+        payload.variables = { name: selectedUser?.name || '' };
+      }
 
       const res = await api.post('/admin/notifications/send', payload);
       toast.success(res.data.message || 'Notification sent');
@@ -229,8 +248,8 @@ export default function AdminNotificationsPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
                 >
                   <option value="">Select segment...</option>
-                  {Object.entries(SEGMENT_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                  {segments.map((s) => (
+                    <option key={s.key} value={s.key}>{s.label}</option>
                   ))}
                 </select>
               </div>

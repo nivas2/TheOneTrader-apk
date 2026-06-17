@@ -33,60 +33,130 @@ router.post('/send', authMiddleware, adminGuard, validate(sendSchema), async (re
   try {
     const { title, body, recipientType, segment, userId, variables, data } = req.body;
 
-    // Render template variables if provided
-    const renderedTitle = variables ? renderTemplate(title, variables) : title;
-    const renderedBody = variables ? renderTemplate(body, variables) : body;
+    // Check if template has per-user variables like {name}
+    const hasPerUserVars = /\{name\}/i.test(title + body);
 
-    let tokens: string[] = [];
     let recipientCount = 0;
 
-    if (recipientType === 'all') {
-      const users = await User.find({
-        role: 'USER',
-        'deviceTokens.0': { $exists: true },
-      }).select('deviceTokens');
-      tokens = users.flatMap((u) => u.deviceTokens.map((d) => d.token));
-      recipientCount = users.length;
-    } else if (recipientType === 'segment' && segment) {
-      const activeSubscriptions = await Subscription.find({
-        status: 'ACTIVE',
-        segment,
-        expiresAt: { $gt: new Date() },
-      });
-      const userIds = activeSubscriptions.map((s) => s.userId);
-      const users = await User.find({
-        _id: { $in: userIds },
-        'deviceTokens.0': { $exists: true },
-      }).select('deviceTokens');
-      tokens = users.flatMap((u) => u.deviceTokens.map((d) => d.token));
-      recipientCount = users.length;
-    } else if (recipientType === 'individual' && userId) {
-      const user = await User.findById(userId).select('deviceTokens');
-      if (user && user.deviceTokens.length > 0) {
-        tokens = user.deviceTokens.map((d) => d.token);
-        recipientCount = 1;
-      }
-    }
+    if (hasPerUserVars) {
+      // Per-user personalized sending
+      let users: any[] = [];
 
-    if (tokens.length > 0) {
-      await sendPushToTokens(tokens, renderedTitle, renderedBody, {
+      if (recipientType === 'all') {
+        users = await User.find({
+          role: 'USER',
+          'deviceTokens.0': { $exists: true },
+        }).select('name email phone deviceTokens');
+      } else if (recipientType === 'segment' && segment) {
+        const activeSubscriptions = await Subscription.find({
+          status: 'ACTIVE',
+          segment,
+          expiresAt: { $gt: new Date() },
+        });
+        const userIds = activeSubscriptions.map((s) => s.userId);
+        users = await User.find({
+          _id: { $in: userIds },
+          'deviceTokens.0': { $exists: true },
+        }).select('name email phone deviceTokens');
+      } else if (recipientType === 'individual' && userId) {
+        const user = await User.findById(userId).select('name email phone deviceTokens');
+        if (user && user.deviceTokens.length > 0) {
+          users = [user];
+        }
+      }
+
+      recipientCount = users.length;
+
+      // Send personalized message per user
+      const pushData = {
         type: NOTIFICATION_TYPES.CUSTOM_MESSAGE,
         channelId: 'general',
         ...data,
+      };
+
+      for (const user of users) {
+        const userVars: Record<string, string> = {
+          ...variables,
+          name: user.name || 'Trader',
+          email: user.email || '',
+          phone: user.phone || '',
+          segment: segment || '',
+        };
+        const renderedTitle = renderTemplate(title, userVars);
+        const renderedBody = renderTemplate(body, userVars);
+        const tokens = user.deviceTokens.map((d: any) => d.token);
+        if (tokens.length > 0) {
+          await sendPushToTokens(tokens, renderedTitle, renderedBody, pushData);
+        }
+      }
+
+      // Log with a sample rendering
+      const sampleVars: Record<string, string> = { ...variables, name: 'User', segment: segment || '' };
+      await logNotification({
+        type: NOTIFICATION_TYPES.CUSTOM_MESSAGE,
+        title: renderTemplate(title, sampleVars),
+        body: renderTemplate(body, sampleVars),
+        data,
+        recipientType,
+        recipientFilter: segment || userId,
+        sentBy: req.userId,
+        recipientCount,
+      });
+    } else {
+      // Static message — batch send (no per-user vars)
+      const renderedTitle = variables ? renderTemplate(title, variables) : title;
+      const renderedBody = variables ? renderTemplate(body, variables) : body;
+
+      let tokens: string[] = [];
+
+      if (recipientType === 'all') {
+        const users = await User.find({
+          role: 'USER',
+          'deviceTokens.0': { $exists: true },
+        }).select('deviceTokens');
+        tokens = users.flatMap((u) => u.deviceTokens.map((d) => d.token));
+        recipientCount = users.length;
+      } else if (recipientType === 'segment' && segment) {
+        const activeSubscriptions = await Subscription.find({
+          status: 'ACTIVE',
+          segment,
+          expiresAt: { $gt: new Date() },
+        });
+        const userIds = activeSubscriptions.map((s) => s.userId);
+        const users = await User.find({
+          _id: { $in: userIds },
+          'deviceTokens.0': { $exists: true },
+        }).select('deviceTokens');
+        tokens = users.flatMap((u) => u.deviceTokens.map((d) => d.token));
+        recipientCount = users.length;
+      } else if (recipientType === 'individual' && userId) {
+        const user = await User.findById(userId).select('deviceTokens');
+        if (user && user.deviceTokens.length > 0) {
+          tokens = user.deviceTokens.map((d) => d.token);
+          recipientCount = 1;
+        }
+      }
+
+      if (tokens.length > 0) {
+        await sendPushToTokens(tokens, renderedTitle, renderedBody, {
+          type: NOTIFICATION_TYPES.CUSTOM_MESSAGE,
+          channelId: 'general',
+          ...data,
+        });
+      }
+
+      // Log to notification history
+      await logNotification({
+        type: NOTIFICATION_TYPES.CUSTOM_MESSAGE,
+        title: renderedTitle,
+        body: renderedBody,
+        data,
+        recipientType,
+        recipientFilter: segment || userId,
+        sentBy: req.userId,
+        recipientCount,
       });
     }
-
-    // Log to notification history
-    await logNotification({
-      type: NOTIFICATION_TYPES.CUSTOM_MESSAGE,
-      title: renderedTitle,
-      body: renderedBody,
-      data,
-      recipientType,
-      recipientFilter: segment || userId,
-      sentBy: req.userId,
-      recipientCount,
-    });
 
     res.json({
       success: true,

@@ -65,7 +65,7 @@ export default function AdminPlansPage() {
     ? Object.fromEntries(configIntervals.map((i) => [i.key, i.label]))
     : PLAN_TYPE_LABELS;
   const DURATION_MAP: Record<string, number> = configIntervals.length > 0
-    ? Object.fromEntries(configIntervals.map((i) => [i.key, FALLBACK_DURATION_MAP[i.key] || 30]))
+    ? Object.fromEntries(configIntervals.map((i) => [i.key, FALLBACK_DURATION_MAP[i.key] || 0]))
     : FALLBACK_DURATION_MAP;
 
   const fetchPlans = () => {
@@ -77,7 +77,7 @@ export default function AdminPlansPage() {
 
   useEffect(() => {
     fetchPlans();
-    api.get('/admin/config').then((res) => {
+    api.get('/config').then((res) => {
       const data = res.data.data;
       if (data?.segments?.length) setConfigSegments(data.segments);
       if (data?.signalIntervals?.length) setConfigIntervals(data.signalIntervals);
@@ -294,13 +294,14 @@ export default function AdminPlansPage() {
                   <select
                     className="input-field"
                     value={form.planType}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const mapped = DURATION_MAP[e.target.value];
                       setForm({
                         ...form,
                         planType: e.target.value,
-                        durationDays: String(DURATION_MAP[e.target.value] || form.durationDays),
-                      })
-                    }
+                        durationDays: mapped ? String(mapped) : form.durationDays,
+                      });
+                    }}
                   >
                     {PLAN_TYPES.map((p) => (<option key={p} value={p}>{planTypeLabelMap[p] || p}</option>))}
                   </select>

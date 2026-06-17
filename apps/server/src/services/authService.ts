@@ -72,7 +72,7 @@ export async function verifyOtp(email: string, code: string): Promise<void> {
   await Otp.deleteMany({ email: email.toLowerCase() });
 }
 
-export async function loginUser(email: string, password: string): Promise<{ token: string; user: any }> {
+export async function loginUser(email: string, password: string, platform: string = 'web'): Promise<{ token: string; user: any }> {
   const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
     throw new AppError('Invalid email or password', 401);
@@ -93,14 +93,15 @@ export async function loginUser(email: string, password: string): Promise<{ toke
 
   const sessionId = uuidv4();
   const token = jwt.sign(
-    { userId: user._id.toString(), role: user.role, sessionId },
+    { userId: user._id.toString(), role: user.role, sessionId, platform },
     env.JWT_SECRET,
     { expiresIn: env.JWT_EXPIRES_IN as any }
   );
 
-  // Single-session enforcement: overwrite any existing session
+  // Per-platform session enforcement: web and mobile sessions are independent
+  // Web login only invalidates other web sessions, mobile login only invalidates other mobile sessions
   const redis = getRedisClient();
-  await redis.set(`session:${user._id}`, sessionId, 'EX', 365 * 24 * 60 * 60);
+  await redis.set(`session:${platform}:${user._id}`, sessionId, 'EX', 365 * 24 * 60 * 60);
 
   user.currentSessionId = sessionId;
   await user.save();
@@ -197,7 +198,11 @@ export async function changePassword(
   await user.save();
 }
 
-export async function logoutUser(userId: string): Promise<void> {
+export async function logoutUser(userId: string, platform?: string): Promise<void> {
   const redis = getRedisClient();
+  if (platform) {
+    await redis.del(`session:${platform}:${userId}`);
+  }
+  // Also clean legacy key
   await redis.del(`session:${userId}`);
 }

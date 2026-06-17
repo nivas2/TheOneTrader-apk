@@ -1,9 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import jwt from 'jsonwebtoken';
 import { validate } from '../middleware/validate';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import * as authService from '../services/authService';
 import { User } from '../models/User';
+import { env } from '../config/env';
 
 const router = Router();
 
@@ -17,6 +19,7 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  platform: z.enum(['web', 'mobile']).optional(),
 });
 
 const verifyOtpSchema = z.object({
@@ -73,7 +76,8 @@ router.post('/verify-otp', validate(verifyOtpSchema), async (req: Request, res: 
 
 router.post('/login', validate(loginSchema), async (req: Request, res: Response) => {
   try {
-    const result = await authService.loginUser(req.body.email, req.body.password);
+    const platform = req.body.platform || 'web';
+    const result = await authService.loginUser(req.body.email, req.body.password, platform);
     res.json({ success: true, data: result });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });
@@ -150,7 +154,16 @@ router.post('/device-token', authMiddleware, validate(deviceTokenSchema), async 
 
 router.post('/logout', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    await authService.logoutUser(req.userId!);
+    // Extract platform from JWT to clean the correct session key
+    const token = req.headers.authorization?.split(' ')[1];
+    let platform: string | undefined;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+        platform = decoded.platform;
+      } catch {}
+    }
+    await authService.logoutUser(req.userId!, platform);
     res.json({ success: true, message: 'Logged out successfully' });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });
