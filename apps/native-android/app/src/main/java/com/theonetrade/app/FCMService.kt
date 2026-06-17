@@ -148,7 +148,7 @@ class FCMService : FirebaseMessagingService() {
     private fun sendTokenToServer(token: String, authToken: String) {
         Thread {
             try {
-                val url = java.net.URL("https://pos.feastigo.com/api/v1/auth/device-token")
+                val url = java.net.URL("https://pos.feastigo.com/theonetrade/api/v1/auth/device-token")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.requestMethod = "POST"
                 conn.setRequestProperty("Content-Type", "application/json")

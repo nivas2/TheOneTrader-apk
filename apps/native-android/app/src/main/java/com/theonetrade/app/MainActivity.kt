@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "TheOneTrade"
         private const val WEB_URL = "https://pos.feastigo.com/theonetrade"
-        private const val API_BASE = "https://pos.feastigo.com/api/v1"
+        private const val API_BASE = "https://pos.feastigo.com/theonetrade/api/v1"
         private const val USER_AGENT_SUFFIX = " TheOneTradeApp/1.0"
         private const val NOTIFICATION_PERMISSION_CODE = 1001
         const val PREFS_NAME = "theonetrade_prefs"
