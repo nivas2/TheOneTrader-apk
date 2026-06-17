@@ -33,8 +33,8 @@ router.post('/send', authMiddleware, adminGuard, validate(sendSchema), async (re
   try {
     const { title, body, recipientType, segment, userId, variables, data } = req.body;
 
-    // Check if template has per-user variables like {name}
-    const hasPerUserVars = /\{name\}/i.test(title + body);
+    // Check if template has per-user variables like {name}, {segment}, {plan}
+    const hasPerUserVars = /\{(name|segment|plan)\}/i.test(title + body);
 
     let recipientCount = 0;
 
@@ -67,6 +67,28 @@ router.post('/send', authMiddleware, adminGuard, validate(sendSchema), async (re
 
       recipientCount = users.length;
 
+      // Fetch active subscriptions for all target users to resolve {plan} and {segment}
+      const userIds = users.map((u) => u._id);
+      const userSubscriptions = await Subscription.find({
+        userId: { $in: userIds },
+        status: 'ACTIVE',
+        expiresAt: { $gt: new Date() },
+      }).select('userId planType segment');
+      const subByUserId: Record<string, any> = {};
+      for (const sub of userSubscriptions) {
+        subByUserId[sub.userId.toString()] = sub;
+      }
+
+      // Plan type label mapping
+      const PLAN_LABELS: Record<string, string> = {
+        DAILY: 'One Day', WEEKLY: 'One Week', MONTHLY: 'Monthly',
+        QUARTERLY: 'Quarterly', HALF_YEARLY: 'Half Yearly', YEARLY: 'Yearly',
+      };
+      const SEGMENT_LABELS: Record<string, string> = {
+        INTRADAY: 'Intraday', FANDO: 'F&O', MTF: 'MTF',
+        LONGTERM: 'Long Term', SHORTTERM: 'Short Term',
+      };
+
       // Send personalized message per user
       const pushData = {
         type: NOTIFICATION_TYPES.CUSTOM_MESSAGE,
@@ -75,12 +97,14 @@ router.post('/send', authMiddleware, adminGuard, validate(sendSchema), async (re
       };
 
       for (const user of users) {
+        const userSub = subByUserId[user._id.toString()];
         const userVars: Record<string, string> = {
           ...variables,
           name: user.name || 'Trader',
           email: user.email || '',
           phone: user.phone || '',
-          segment: segment || '',
+          segment: (variables?.segment) || (userSub ? (SEGMENT_LABELS[userSub.segment] || userSub.segment) : (segment || '')),
+          plan: (variables?.plan) || (userSub ? (PLAN_LABELS[userSub.planType] || userSub.planType) : ''),
         };
         const renderedTitle = renderTemplate(title, userVars);
         const renderedBody = renderTemplate(body, userVars);
@@ -91,7 +115,7 @@ router.post('/send', authMiddleware, adminGuard, validate(sendSchema), async (re
       }
 
       // Log with a sample rendering
-      const sampleVars: Record<string, string> = { ...variables, name: 'User', segment: segment || '' };
+      const sampleVars: Record<string, string> = { ...variables, name: 'User', segment: segment || '', plan: '' };
       await logNotification({
         type: NOTIFICATION_TYPES.CUSTOM_MESSAGE,
         title: renderTemplate(title, sampleVars),
