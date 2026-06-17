@@ -2,21 +2,25 @@ import { getIO } from '../config/socket';
 import { ISignalDocument } from '../models/Signal';
 import { Subscription } from '../models/Subscription';
 import { User } from '../models/User';
-import { SOCKET_EVENTS, getRoomName, NOTIFICATION_TYPES } from '@theonetrade/shared-types';
+import { SOCKET_EVENTS, getRoomName, Segment, NOTIFICATION_TYPES } from '@theonetrade/shared-types';
 import { sendPushToTokens } from './pushService';
 
 export async function broadcastSignal(signal: ISignalDocument): Promise<void> {
   const io = getIO();
 
-  // Broadcast to segment room (all subscribers of this segment receive it)
-  const roomName = getRoomName(signal.segment);
-  io.to(roomName).emit(SOCKET_EVENTS.SIGNAL_NEW, {
+  const payload = {
     signal: signal.toObject(),
     alarm: true,
     duration: 30,
-  });
+  };
 
-  // Also broadcast to admin room
+  // Broadcast to ALL segment rooms so every active subscriber receives
+  // the signal regardless of which segment they subscribed to
+  for (const seg of Object.values(Segment)) {
+    io.to(getRoomName(seg)).emit(SOCKET_EVENTS.SIGNAL_NEW, payload);
+  }
+
+  // Also broadcast to admin room (without alarm)
   io.to('admin').emit(SOCKET_EVENTS.SIGNAL_NEW, {
     signal: signal.toObject(),
     alarm: false,
@@ -26,13 +30,13 @@ export async function broadcastSignal(signal: ISignalDocument): Promise<void> {
 
 export async function sendSignalFCM(signal: ISignalDocument): Promise<void> {
   try {
+    // Send to ALL users with any active subscription (not just the signal's segment)
     const activeSubscriptions = await Subscription.find({
       status: 'ACTIVE',
-      segment: signal.segment,
       expiresAt: { $gt: new Date() },
     });
 
-    const userIds = activeSubscriptions.map((s) => s.userId);
+    const userIds = [...new Set(activeSubscriptions.map((s) => s.userId.toString()))];
     const users = await User.find({
       _id: { $in: userIds },
       'deviceTokens.0': { $exists: true },
@@ -70,13 +74,13 @@ const STATUS_LABELS: Record<string, string> = {
 
 export async function sendSignalStatusFCM(signal: ISignalDocument): Promise<void> {
   try {
+    // Send status updates to ALL active subscribers
     const activeSubscriptions = await Subscription.find({
       status: 'ACTIVE',
-      segment: signal.segment,
       expiresAt: { $gt: new Date() },
     });
 
-    const userIds = activeSubscriptions.map((s) => s.userId);
+    const userIds = [...new Set(activeSubscriptions.map((s) => s.userId.toString()))];
     const users = await User.find({
       _id: { $in: userIds },
       'deviceTokens.0': { $exists: true },
