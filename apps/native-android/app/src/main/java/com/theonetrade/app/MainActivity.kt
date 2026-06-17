@@ -12,6 +12,7 @@ import android.util.Log
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -20,6 +21,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.ProgressBar
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -31,6 +34,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var prefs: SharedPreferences
     private var fcmToken: String? = null
+    private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    private lateinit var fileChooserLauncher: ActivityResultLauncher<Intent>
 
     companion object {
         private const val TAG = "TheOneTrade"
@@ -52,6 +57,27 @@ class MainActivity : AppCompatActivity() {
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         webView = findViewById(R.id.webView)
         progressBar = findViewById(R.id.progressBar)
+
+        // Register file chooser result handler
+        fileChooserLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            val data = result.data
+            val results = if (result.resultCode == RESULT_OK && data != null) {
+                // Handle single or multiple file selection
+                if (data.clipData != null) {
+                    Array(data.clipData!!.itemCount) { i -> data.clipData!!.getItemAt(i).uri }
+                } else if (data.data != null) {
+                    arrayOf(data.data!!)
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+            fileUploadCallback?.onReceiveValue(results ?: arrayOf())
+            fileUploadCallback = null
+        }
 
         setupWebView()
         setupBackNavigation()
@@ -139,6 +165,30 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     progressBar.visibility = View.GONE
                 }
+            }
+
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                // Cancel any existing callback
+                fileUploadCallback?.onReceiveValue(null)
+                fileUploadCallback = filePathCallback
+
+                val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                }
+                try {
+                    fileChooserLauncher.launch(intent)
+                } catch (e: Exception) {
+                    Log.e(TAG, "File chooser failed", e)
+                    fileUploadCallback?.onReceiveValue(null)
+                    fileUploadCallback = null
+                    return false
+                }
+                return true
             }
         }
     }
