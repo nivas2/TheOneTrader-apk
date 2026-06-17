@@ -4,6 +4,10 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
+const SUPPORT_EMAIL = 'hari@theonetrade.in';
+const SEGMENT_LABELS: Record<string, string> = { INTRADAY: 'Intraday', FANDO: 'F&O', MTF: 'MTF', LONGTERM: 'Long Term', SHORTTERM: 'Short Term' };
+const PLAN_LABELS: Record<string, string> = { DAILY: 'One Day', WEEKLY: 'One Week', MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', HALF_YEARLY: 'Half Yearly', YEARLY: 'Yearly' };
+
 interface PerformanceData {
   totalSignals: number;
   hitTarget: number;
@@ -17,12 +21,17 @@ interface ConfigData {
   marqueeWarningText?: string;
 }
 
+const formatDate = (d: string) => {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [performance, setPerformance] = useState<PerformanceData | null>(null);
   const [config, setConfig] = useState<ConfigData | null>(null);
-  const [subscription, setSubscription] = useState<any>(null);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -40,8 +49,7 @@ export default function HomeScreen() {
         setConfig(configRes.value.data.data);
       }
       if (subRes.status === 'fulfilled') {
-        const subs = subRes.value.data.data || [];
-        setSubscription(subs.find((s: any) => s.status === 'ACTIVE') || null);
+        setSubscriptions(subRes.value.data.data || []);
       }
     } finally {
       setIsRefreshing(false);
@@ -55,6 +63,92 @@ export default function HomeScreen() {
   const onRefresh = () => {
     setIsRefreshing(true);
     fetchData();
+  };
+
+  const activeSub = subscriptions.find((s: any) => s.status === 'ACTIVE');
+  const pendingActivation = subscriptions.find((s: any) => s.status === 'PENDING_ACTIVATION');
+  const pendingApproval = subscriptions.find((s: any) => s.status === 'PENDING_APPROVAL');
+  const expiredSub = !activeSub && !pendingActivation && !pendingApproval && subscriptions.find((s: any) => s.status === 'EXPIRED');
+
+  const renderSubscriptionCard = () => {
+    if (activeSub) {
+      return (
+        <View style={styles.subCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#D1FAE5' }} />
+            <Text style={styles.subTitle}>Your Plan is Active</Text>
+          </View>
+          <Text style={styles.subPlan}>
+            {PLAN_LABELS[activeSub.planType] || activeSub.planType} - {SEGMENT_LABELS[activeSub.segment] || activeSub.segment}
+          </Text>
+          <Text style={styles.subExpiry}>
+            Expires: {formatDate(activeSub.expiresAt)}
+          </Text>
+        </View>
+      );
+    }
+
+    if (pendingActivation) {
+      return (
+        <View style={styles.subCardApproved}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Text style={{ fontSize: 16, color: '#1E40AF' }}>{'✓'}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E40AF' }}>Payment Approved!</Text>
+          </View>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#1F2937', marginTop: 2 }}>
+            {PLAN_LABELS[pendingActivation.planType] || pendingActivation.planType} - {SEGMENT_LABELS[pendingActivation.segment] || pendingActivation.segment}
+          </Text>
+          <Text style={{ fontSize: 13, color: '#1E40AF', marginTop: 6 }}>
+            Your plan will unlock on {formatDate(pendingActivation.activatedAt)} at 12:00 AM. You will start receiving signals from that day.
+          </Text>
+          <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}>
+            Validity: {formatDate(pendingActivation.activatedAt)} to {formatDate(pendingActivation.expiresAt)}
+          </Text>
+        </View>
+      );
+    }
+
+    if (pendingApproval) {
+      return (
+        <View style={styles.subCardPending}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Text style={{ fontSize: 14, color: '#92400E' }}>{'⏳'}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#92400E' }}>Payment Under Review</Text>
+          </View>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#1F2937', marginTop: 2 }}>
+            {PLAN_LABELS[pendingApproval.planType] || pendingApproval.planType} - {SEGMENT_LABELS[pendingApproval.segment] || pendingApproval.segment}
+          </Text>
+          <Text style={{ fontSize: 13, color: '#92400E', marginTop: 6 }}>
+            Your payment is being reviewed. Once approved, your plan will activate from the next day at 12:00 AM.
+          </Text>
+          <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}>
+            Submitted on {formatDate(pendingApproval.createdAt)}. For queries, contact {SUPPORT_EMAIL}
+          </Text>
+        </View>
+      );
+    }
+
+    if (expiredSub) {
+      return (
+        <TouchableOpacity style={styles.subCardExpired} onPress={() => router.push('/(tabs)/payment' as any)}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#4B5563' }}>Subscription Expired</Text>
+          <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>
+            Your {PLAN_LABELS[expiredSub.planType] || expiredSub.planType} plan expired on {formatDate(expiredSub.expiresAt)}. Tap to renew.
+          </Text>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#00B090', marginTop: 8 }}>Renew Subscription</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity style={styles.subCardInactive} onPress={() => router.push('/(tabs)/payment' as any)}>
+        <Text style={{ fontSize: 16, fontWeight: '700', color: '#1F2937' }}>Subscribe & Unlock Premium Signals</Text>
+        <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>
+          Get real-time trading signals with entry, target, and stop loss. Once approved, your plan activates from next day 12:00 AM.
+        </Text>
+        <Text style={styles.subCta}>Tap to subscribe</Text>
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -71,20 +165,7 @@ export default function HomeScreen() {
 
       <Text style={styles.greeting}>Welcome, {user?.name?.split(' ')[0] || 'Trader'}</Text>
 
-      {subscription ? (
-        <View style={styles.subCard}>
-          <Text style={styles.subTitle}>Active Plan</Text>
-          <Text style={styles.subPlan}>{subscription.planType} - {subscription.segment}</Text>
-          <Text style={styles.subExpiry}>
-            Expires: {new Date(subscription.expiresAt).toLocaleDateString()}
-          </Text>
-        </View>
-      ) : (
-        <TouchableOpacity style={styles.subCardInactive} onPress={() => router.push('/(tabs)/payment' as any)}>
-          <Text style={[styles.subTitle, { color: '#4B5563' }]}>No Active Subscription</Text>
-          <Text style={styles.subCta}>Tap to subscribe and unlock full signals</Text>
-        </TouchableOpacity>
-      )}
+      {renderSubscriptionCard()}
 
       {performance ? (
         <View style={styles.perfCard}>
@@ -151,6 +232,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
+  subCardApproved: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3B82F6',
+  },
+  subCardPending: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  subCardExpired: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
   subCardInactive: {
     backgroundColor: '#FFF',
     borderRadius: 12,
@@ -162,7 +264,7 @@ const styles = StyleSheet.create({
   subTitle: { fontSize: 14, fontWeight: '600', color: '#FFF' },
   subPlan: { fontSize: 20, fontWeight: '700', color: '#FFF', marginTop: 4 },
   subExpiry: { fontSize: 12, color: '#D1FAE5', marginTop: 4 },
-  subCta: { fontSize: 14, color: '#00B090', fontWeight: '600', marginTop: 4 },
+  subCta: { fontSize: 14, color: '#00B090', fontWeight: '600', marginTop: 8 },
   perfCard: {
     backgroundColor: '#FFF',
     borderRadius: 12,

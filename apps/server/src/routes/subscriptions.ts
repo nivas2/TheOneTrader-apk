@@ -142,8 +142,13 @@ router.put('/:id/approve', authMiddleware, adminGuard, async (req: AuthRequest, 
       return;
     }
 
-    // Activate immediately
+    // Calculate activation: next midnight IST (UTC+5:30)
     const now = new Date();
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const nowIST = new Date(now.getTime() + IST_OFFSET);
+    nowIST.setDate(nowIST.getDate() + 1);
+    nowIST.setHours(0, 0, 0, 0);
+    const activateAt = new Date(nowIST.getTime() - IST_OFFSET);
 
     // Try to get duration from Plan model, fall back to defaults
     const fallbackDays: Record<string, number> = {
@@ -164,13 +169,16 @@ router.put('/:id/approve', authMiddleware, adminGuard, async (req: AuthRequest, 
       duration = plan.durationDays;
     }
 
-    const expiresAt = new Date(now);
+    const expiresAt = new Date(activateAt);
     expiresAt.setDate(expiresAt.getDate() + duration);
 
-    subscription.status = 'ACTIVE';
-    subscription.activatedAt = now;
+    subscription.status = 'PENDING_ACTIVATION';
+    subscription.activatedAt = activateAt;
     subscription.expiresAt = expiresAt;
     await subscription.save();
+
+    // Format activation date for user message
+    const activationDateStr = activateAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
     // Notify user
     const user = await User.findById(subscription.userId);
@@ -178,8 +186,8 @@ router.put('/:id/approve', authMiddleware, adminGuard, async (req: AuthRequest, 
       sendSubscriptionActivated(user.email, subscription.planType, subscription.segment, expiresAt).catch(console.error);
       sendPushToUser(
         user._id.toString(),
-        'Subscription Activated!',
-        `Your ${subscription.segment} ${subscription.planType} plan is now active! You can start receiving signals.`,
+        'Payment Approved!',
+        `Your ${subscription.segment} ${subscription.planType} plan has been approved! It will activate on ${activationDateStr} at 12:00 AM.`,
         {
           type: NOTIFICATION_TYPES.SUBSCRIPTION_APPROVED,
           segment: subscription.segment,

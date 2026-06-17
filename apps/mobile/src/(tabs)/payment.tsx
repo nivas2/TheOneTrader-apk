@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import api from '../services/api';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://pos.feastigo.com/theonetrade/api/v1';
+const SUPPORT_EMAIL = 'hari@theonetrade.in';
 
 const segments = [
   { value: 'INTRADAY', label: 'Intraday' },
@@ -212,6 +213,17 @@ export default function PaymentScreen() {
             ))}
           </View>
         )}
+      </View>
+
+      {/* Activation Note */}
+      <View style={{ backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14, borderLeftWidth: 4, borderLeftColor: '#3B82F6' }}>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E40AF', marginBottom: 4 }}>How it works</Text>
+        <Text style={{ fontSize: 12, color: '#1E40AF', lineHeight: 18 }}>
+          {'1. Complete payment via UPI and upload screenshot\n2. Our team will review and approve your payment\n3. Once approved, your plan activates from next day 12:00 AM\n4. You will start receiving signals from the activation date'}
+        </Text>
+        <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 6 }}>
+          For queries, contact {SUPPORT_EMAIL}
+        </Text>
       </View>
 
       <View style={styles.card}>

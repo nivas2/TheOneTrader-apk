@@ -206,7 +206,7 @@ export default function PaymentPage() {
                     <p className="text-xs text-yellow-700 mt-1">Under review by admin</p>
                   )}
                   {sub.status === 'PENDING_ACTIVATION' && (
-                    <p className="text-xs text-blue-700 mt-1">Activates tomorrow</p>
+                    <p className="text-xs text-blue-700 mt-1">Activates on {formatDate(sub.activatedAt || '')} at 12:00 AM</p>
                   )}
                 </div>
               </div>
@@ -349,6 +349,20 @@ export default function PaymentPage() {
             </p>
             <p className="text-xs text-gray-400 mt-1">
               After payment, enter UTR/Reference ID and upload screenshot below
+            </p>
+          </div>
+
+          {/* Activation Note */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <p className="text-sm font-medium text-blue-800 mb-1">How it works</p>
+            <ul className="text-xs text-blue-700 space-y-1">
+              <li>1. Complete payment via UPI and upload screenshot below</li>
+              <li>2. Our team will review and approve your payment</li>
+              <li>3. Once approved, your plan activates from <strong>next day 12:00 AM</strong></li>
+              <li>4. You will start receiving signals from the activation date</li>
+            </ul>
+            <p className="text-xs text-gray-500 mt-2">
+              For any queries, contact <a href={`mailto:${SUPPORT_EMAIL}`} className="text-brand-emerald hover:underline">{SUPPORT_EMAIL}</a>
             </p>
           </div>
 
