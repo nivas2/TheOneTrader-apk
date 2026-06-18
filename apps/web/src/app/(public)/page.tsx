@@ -24,10 +24,18 @@ function useScrollReveal() {
       },
       { threshold: 0.1 }
     );
-    const elements = document.querySelectorAll('.scroll-reveal');
-    elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
+
+    // Observe after a short delay to ensure DOM is rendered
+    const timer = setTimeout(() => {
+      const elements = document.querySelectorAll('.scroll-reveal');
+      elements.forEach((el) => observer.observe(el));
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  });
 }
 
 function useCountUp(target: number, duration: number, startCounting: boolean) {
@@ -77,7 +85,7 @@ export default function HomePage() {
 
   const [signals, setSignals] = useState<any[]>([]);
   const [performance, setPerformance] = useState<any>(null);
-  const [isApp, setIsApp] = useState<boolean | null>(null);
+  const [isApp, setIsApp] = useState(false);
 
   // FOMO
   const [profitCounter, setProfitCounter] = useState(1247350);
@@ -102,19 +110,18 @@ export default function HomePage() {
   const hitTarget = useCountUp(performance?.hitTarget || 0, 1500, statsVisible);
   const hitSL = useCountUp(performance?.hitSL || 0, 1500, statsVisible);
 
+  // Detect WebView and redirect
   useEffect(() => {
-    setIsApp(navigator.userAgent.includes('TheOneTradeApp'));
-  }, []);
-
-  useEffect(() => {
-    if (isApp === null || isLoading) return;
-    if (isApp) {
+    const inApp = navigator.userAgent.includes('TheOneTradeApp');
+    setIsApp(inApp);
+    if (inApp) {
       router.replace(user ? '/signals' : '/login');
     }
-  }, [isApp, user, isLoading, router]);
+  }, [user, router]);
 
+  // Load data
   useEffect(() => {
-    if (isApp === false) {
+    if (!isApp) {
       api.get('/signals?limit=6').then((res) => setSignals(res.data.data || [])).catch(() => {});
       api.get('/public/signals/performance').then((res) => setPerformance(res.data.data)).catch(() => {});
     }
@@ -209,7 +216,7 @@ export default function HomePage() {
     return () => clearTimeout(timeout);
   }, []);
 
-  if (isApp === null || isApp) {
+  if (isApp) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
