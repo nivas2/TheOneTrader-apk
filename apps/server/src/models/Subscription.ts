@@ -10,6 +10,7 @@ export interface ISubscriptionDocument extends Document {
   receiptScreenshotPath: string;
   activatedAt?: Date;
   expiresAt?: Date;
+  rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +38,7 @@ const SubscriptionSchema = new Schema<ISubscriptionDocument>(
     receiptScreenshotPath: { type: String, required: true },
     activatedAt: { type: Date },
     expiresAt: { type: Date },
+    rejectionReason: { type: String },
   },
   { timestamps: true }
 );

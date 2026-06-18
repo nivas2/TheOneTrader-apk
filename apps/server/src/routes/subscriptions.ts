@@ -206,9 +206,15 @@ router.put('/:id/approve', authMiddleware, adminGuard, async (req: AuthRequest, 
 // Admin: reject subscription
 router.put('/:id/reject', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
   try {
+    const { reason } = req.body;
+    if (!reason || !reason.trim()) {
+      res.status(400).json({ success: false, error: 'Rejection reason is required' });
+      return;
+    }
+
     const subscription = await Subscription.findByIdAndUpdate(
       req.params.id,
-      { status: 'REJECTED' },
+      { status: 'REJECTED', rejectionReason: reason.trim() },
       { new: true }
     );
     if (!subscription) {
@@ -219,7 +225,7 @@ router.put('/:id/reject', authMiddleware, adminGuard, async (req: AuthRequest, r
     sendPushToUser(
       subscription.userId.toString(),
       'Subscription Rejected',
-      'Your subscription request was not approved. Contact support for details.',
+      `Your subscription request was not approved. Reason: ${reason.trim()}`,
       {
         type: NOTIFICATION_TYPES.SUBSCRIPTION_REJECTED,
         channelId: 'general',
@@ -235,6 +241,18 @@ router.put('/:id/reject', authMiddleware, adminGuard, async (req: AuthRequest, r
 // Client: get my subscriptions
 router.get('/mine', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
+    const now = new Date();
+
+    // Real-time status transitions scoped to this user
+    await Subscription.updateMany(
+      { userId: req.userId, status: 'PENDING_ACTIVATION', activatedAt: { $lte: now } },
+      { $set: { status: 'ACTIVE' } }
+    );
+    await Subscription.updateMany(
+      { userId: req.userId, status: 'ACTIVE', expiresAt: { $lte: now } },
+      { $set: { status: 'EXPIRED' } }
+    );
+
     const subscriptions = await Subscription.find({ userId: req.userId }).sort({ createdAt: -1 });
     res.json({ success: true, data: subscriptions });
   } catch (error: any) {

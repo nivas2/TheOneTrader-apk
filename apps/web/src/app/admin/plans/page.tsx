@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import { SEGMENT_LABELS, PLAN_TYPE_LABELS } from '@/lib/labels';
 
 interface Plan {
@@ -137,7 +138,16 @@ export default function AdminPlansPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this plan?')) return;
+    const result = await Swal.fire({
+      title: 'Delete Plan?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete',
+    });
+    if (!result.isConfirmed) return;
     try {
       await api.delete(`/plans/${id}`);
       toast.success('Plan deleted');

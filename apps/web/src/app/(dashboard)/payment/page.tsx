@@ -118,6 +118,14 @@ export default function PaymentPage() {
     return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
   };
 
+  // Client-side safety net: show EXPIRED if status is ACTIVE but expiresAt has passed
+  const getDisplayStatus = (sub: Subscription) => {
+    if (sub.status === 'ACTIVE' && sub.expiresAt && new Date(sub.expiresAt).getTime() <= Date.now()) {
+      return 'EXPIRED';
+    }
+    return sub.status;
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!utrId.trim()) {
@@ -455,8 +463,8 @@ export default function PaymentPage() {
                       <p className="font-medium text-sm">{PLAN_TYPE_LABELS[sub.planType] || sub.planType}</p>
                       <p className="text-xs text-gray-400">{SEGMENT_LABELS[sub.segment] || sub.segment}</p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[sub.status] || ''}`}>
-                      {SUBSCRIPTION_STATUS_LABELS[sub.status] || sub.status}
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[getDisplayStatus(sub)] || ''}`}>
+                      {SUBSCRIPTION_STATUS_LABELS[getDisplayStatus(sub)] || getDisplayStatus(sub)}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mt-2">
@@ -525,8 +533,8 @@ export default function PaymentPage() {
                         {sub.utrId || <span className="text-gray-400">-</span>}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[sub.status] || ''}`}>
-                          {SUBSCRIPTION_STATUS_LABELS[sub.status] || sub.status}
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[getDisplayStatus(sub)] || ''}`}>
+                          {SUBSCRIPTION_STATUS_LABELS[getDisplayStatus(sub)] || getDisplayStatus(sub)}
                         </span>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const TABS = [
   { key: 'general', label: 'General' },
@@ -128,7 +129,16 @@ export default function AdminConfigPage() {
   };
 
   const handleDeleteApk = async () => {
-    if (!confirm('Are you sure you want to delete the current APK?')) return;
+    const result = await Swal.fire({
+      title: 'Delete APK?',
+      text: 'Are you sure you want to delete the current APK?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it',
+    });
+    if (!result.isConfirmed) return;
     setIsDeletingApk(true);
     try {
       await api.delete('/config/app/delete');

@@ -28,6 +28,7 @@ export default function AdminPaymentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('ALL');
   const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
+  const [rejectModal, setRejectModal] = useState<{ id: string; reason: string } | null>(null);
 
   const fetchSubscriptions = (tab: Tab) => {
     setIsLoading(true);
@@ -54,11 +55,19 @@ export default function AdminPaymentsPage() {
     }
   };
 
-  const handleReject = async (id: string) => {
-    if (!confirm('Are you sure you want to reject this payment?')) return;
+  const handleReject = (id: string) => {
+    setRejectModal({ id, reason: '' });
+  };
+
+  const confirmReject = async () => {
+    if (!rejectModal || !rejectModal.reason.trim()) {
+      toast.error('Please provide a rejection reason');
+      return;
+    }
     try {
-      await api.put(`/admin/subscriptions/${id}/reject`);
+      await api.put(`/admin/subscriptions/${rejectModal.id}/reject`, { reason: rejectModal.reason.trim() });
       toast.success('Subscription rejected');
+      setRejectModal(null);
       fetchSubscriptions(activeTab);
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Rejection failed');
@@ -188,6 +197,11 @@ export default function AdminPaymentsPage() {
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[sub.status] || 'bg-gray-100 text-gray-600'}`}>
                         {SUBSCRIPTION_STATUS_LABELS[sub.status] || sub.status}
                       </span>
+                      {sub.status === 'REJECTED' && sub.rejectionReason && (
+                        <p className="text-xs text-red-500 mt-1 max-w-[200px] truncate" title={sub.rejectionReason}>
+                          {sub.rejectionReason}
+                        </p>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       {receiptUrl ? (
@@ -254,6 +268,39 @@ export default function AdminPaymentsPage() {
             <button onClick={() => setSelectedScreenshot(null)} className="btn-secondary w-full mt-4">
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Reason Modal */}
+      {rejectModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setRejectModal(null)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold text-lg mb-1">Reject Payment</h3>
+            <p className="text-sm text-gray-500 mb-4">Please provide a reason for rejecting this payment. The user will see this reason.</p>
+            <textarea
+              value={rejectModal.reason}
+              onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
+              placeholder="e.g., Screenshot is unclear, amount mismatch, duplicate submission..."
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400"
+              rows={3}
+              autoFocus
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setRejectModal(null)}
+                className="flex-1 btn-secondary py-2.5 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmReject}
+                disabled={!rejectModal.reason.trim()}
+                className="flex-1 bg-red-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Confirm Rejection
+              </button>
+            </div>
           </div>
         </div>
       )}
