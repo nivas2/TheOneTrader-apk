@@ -31,7 +31,9 @@ export default function MarqueeBanner() {
 
   // Fetch real market data
   useEffect(() => {
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    // Detect basePath from current URL (e.g. /theonetrade)
+    const path = window.location.pathname;
+    const basePath = path.startsWith('/theonetrade') ? '/theonetrade' : '';
     fetch(`${basePath}/api/market-data`)
       .then((res) => res.json())
       .then((res) => {
