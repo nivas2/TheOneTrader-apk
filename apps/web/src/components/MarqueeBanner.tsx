@@ -31,7 +31,8 @@ export default function MarqueeBanner() {
 
   // Fetch real market data
   useEffect(() => {
-    fetch('/api/market-data')
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    fetch(`${basePath}/api/market-data`)
       .then((res) => res.json())
       .then((res) => {
         if (res.data && res.data.length > 0) {
