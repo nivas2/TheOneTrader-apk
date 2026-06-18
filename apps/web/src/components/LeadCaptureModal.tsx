@@ -62,26 +62,22 @@ export default function LeadCaptureModal({ delay = 0, sessionKey = 'leadModalSee
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#111118] border border-white/10 rounded-2xl max-w-md w-full p-8">
-        {/* Limited Offer Badge */}
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-xl">
         <div className="flex justify-center mb-4">
-          <span
-            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-brand-emerald border border-brand-emerald/30 animate-shimmer"
-            style={{ backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(0,176,144,0.1) 50%, transparent 100%)', backgroundSize: '200% 100%' }}
-          >
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-brand-emerald bg-brand-emerald/10 border border-brand-emerald/20">
             Limited Time Offer
           </span>
         </div>
 
-        <h2 className="text-2xl font-bold text-white mb-2 text-center">Get Premium Trading Signals</h2>
-        <p className="text-gray-400 mb-6 text-center">Enter your details to get started with expert-curated trading insights.</p>
+        <h2 className="text-2xl font-bold text-text-heading mb-2 text-center">Get Premium Trading Signals</h2>
+        <p className="text-text-body mb-6 text-center">Enter your details to get started with expert-curated trading insights.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
             placeholder="Your Name"
-            className="w-full px-4 py-3 bg-[#0A0A0F] border border-[#1E1E2A] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-emerald focus:border-transparent"
+            className="input-field"
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -89,7 +85,7 @@ export default function LeadCaptureModal({ delay = 0, sessionKey = 'leadModalSee
           <input
             type="email"
             placeholder="Email Address"
-            className="w-full px-4 py-3 bg-[#0A0A0F] border border-[#1E1E2A] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-emerald focus:border-transparent"
+            className="input-field"
             required
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -97,24 +93,19 @@ export default function LeadCaptureModal({ delay = 0, sessionKey = 'leadModalSee
           <input
             type="tel"
             placeholder="Phone Number"
-            className="w-full px-4 py-3 bg-[#0A0A0F] border border-[#1E1E2A] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-emerald focus:border-transparent"
+            className="input-field"
             required
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
-          <button
-            type="submit"
-            className="w-full bg-brand-emerald text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-glow"
-            disabled={isSubmitting}
-          >
+          <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Submitting...' : 'Get Access'}
           </button>
         </form>
 
-        {/* Social proof */}
-        <p className="text-center text-xs text-gray-500 mt-4">Join 2,500+ traders already profiting</p>
+        <p className="text-center text-xs text-gray-400 mt-4">Join 2,500+ traders already profiting</p>
 
-        <button onClick={handleClose} className="w-full text-center text-sm text-gray-500 mt-3 hover:text-gray-400 transition-colors">
+        <button onClick={handleClose} className="w-full text-center text-sm text-gray-400 mt-3 hover:text-gray-600 transition-colors">
           Skip for now
         </button>
       </div>
