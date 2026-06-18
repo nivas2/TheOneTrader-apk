@@ -42,26 +42,39 @@ function buildSubState(subs: any[]): SubState {
     rejectionReason: null,
   };
 
+  // Check for active subscription first (always takes priority)
   for (const s of subs) {
-    switch (s.status) {
-      case 'ACTIVE':
-        state.hasActive = true;
-        if (s.expiresAt) {
-          state.expiresAt = s.expiresAt;
-          const diffMs = new Date(s.expiresAt).getTime() - Date.now();
-          state.daysUntilExpiry = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-        }
-        break;
+    if (s.status === 'ACTIVE') {
+      state.hasActive = true;
+      if (s.expiresAt) {
+        state.expiresAt = s.expiresAt;
+        const diffMs = new Date(s.expiresAt).getTime() - Date.now();
+        state.daysUntilExpiry = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      }
+    }
+  }
+
+  // If active, no need to determine other banner statuses
+  if (state.hasActive) return state;
+
+  // Sort by updatedAt desc — only show the LATEST subscription's banner
+  const sorted = [...subs].sort((a, b) =>
+    new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
+  );
+
+  const latest = sorted[0];
+  if (latest) {
+    switch (latest.status) {
       case 'PENDING_APPROVAL':
         state.isPendingApproval = true;
         break;
       case 'PENDING_ACTIVATION':
         state.isPendingActivation = true;
-        if (s.activatedAt) state.activationDate = s.activatedAt;
+        if (latest.activatedAt) state.activationDate = latest.activatedAt;
         break;
       case 'REJECTED':
         state.isRejected = true;
-        if (s.rejectionReason) state.rejectionReason = s.rejectionReason;
+        if (latest.rejectionReason) state.rejectionReason = latest.rejectionReason;
         break;
       case 'EXPIRED':
         state.isExpired = true;
