@@ -172,3 +172,45 @@
 .scroll-delay-2 { transition-delay: 0.2s; }
 .scroll-delay-3 { transition-delay: 0.3s; }
 .scroll-delay-4 { transition-delay: 0.4s; }
+
+/* Mobile: disable scroll-reveal animations — all sections immediately visible */
+@media (max-width: 767px) {
+  .scroll-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .scroll-delay-1,
+  .scroll-delay-2,
+  .scroll-delay-3,
+  .scroll-delay-4 {
+    transition-delay: 0s !important;
+  }
+}
+
+/* Mobile metrics green particles */
+@keyframes mobileParticle {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.5;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-120px) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Hide scrollbar for mobile carousel */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

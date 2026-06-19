@@ -101,6 +101,7 @@ export default function HomePage() {
 
   // Stats
   const statsRef = useRef<HTMLDivElement>(null);
+  const offerCarouselRef = useRef<HTMLDivElement>(null);
   const [statsVisible, setStatsVisible] = useState(false);
 
   useScrollReveal();
@@ -216,6 +217,34 @@ export default function HomePage() {
     return () => clearTimeout(timeout);
   }, []);
 
+  // Mobile: auto-scroll "What We Offer" carousel
+  useEffect(() => {
+    const container = offerCarouselRef.current;
+    if (!container) return;
+    const mql = window.matchMedia('(max-width: 767px)');
+    if (!mql.matches) return;
+
+    let idx = 0;
+
+    const scroll = () => {
+      const total = container.children.length;
+      idx = (idx + 1) % total;
+      const card = container.children[idx] as HTMLElement;
+      if (card) {
+        container.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+      }
+    };
+
+    const intervalId = setInterval(scroll, 3500);
+    const pause = () => { clearInterval(intervalId); };
+    container.addEventListener('touchstart', pause, { once: true });
+
+    return () => {
+      clearInterval(intervalId);
+      container.removeEventListener('touchstart', pause);
+    };
+  }, []);
+
   if (isApp) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -258,19 +287,19 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-4 mb-8">
+              <div className="flex gap-2 sm:gap-4 mb-8">
                 <Link
                   href="/register"
-                  className="inline-flex items-center px-8 py-4 bg-brand-emerald text-white rounded-lg font-bold text-lg hover:opacity-90 transition-opacity shadow-lg shadow-brand-emerald/20"
+                  className="inline-flex items-center px-4 py-3 sm:px-8 sm:py-4 bg-brand-emerald text-white rounded-lg font-bold text-sm sm:text-lg hover:opacity-90 transition-opacity shadow-lg shadow-brand-emerald/20"
                 >
                   Start Trading Now
-                  <svg className="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="ml-2 w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </Link>
                 <Link
                   href="/signals"
-                  className="inline-flex items-center px-8 py-4 border-2 border-gray-200 text-text-body rounded-lg font-semibold text-lg hover:border-brand-emerald hover:text-brand-emerald transition-colors"
+                  className="inline-flex items-center px-4 py-3 sm:px-8 sm:py-4 border-2 border-gray-200 text-text-body rounded-lg font-semibold text-sm sm:text-lg hover:border-brand-emerald hover:text-brand-emerald transition-colors"
                 >
                   View Live Signals
                 </Link>
@@ -324,8 +353,21 @@ export default function HomePage() {
       </section>
 
       {/* ── Social Proof Bar ── */}
-      <section className="bg-white border-y border-gray-100 py-8">
-        <div className="max-w-6xl mx-auto px-4">
+      <section className="relative bg-[#0A0A0F] md:bg-white border-y border-gray-800 md:border-gray-100 py-8 overflow-hidden">
+        {/* Mobile animated green particles */}
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 rounded-full bg-brand-emerald/50 md:hidden"
+            style={{
+              left: `${8 + i * 12}%`,
+              bottom: '-10%',
+              animation: `mobileParticle ${4 + i * 0.5}s ease-in-out infinite`,
+              animationDelay: `${i * 0.6}s`,
+            }}
+          />
+        ))}
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
             {[
               { value: '2,500+', label: 'Active Traders' },
@@ -334,9 +376,9 @@ export default function HomePage() {
               { value: '3 Years', label: 'Track Record' },
               { value: '24/7', label: 'Support' },
             ].map((item, i) => (
-              <div key={i} className="scroll-reveal scroll-delay-1">
-                <p className="text-2xl font-bold text-text-heading">{item.value}</p>
-                <p className="text-sm text-text-body">{item.label}</p>
+              <div key={i} className={`scroll-reveal scroll-delay-1${i === 4 ? ' col-span-2 md:col-span-1' : ''}`}>
+                <p className="text-2xl font-bold text-white md:text-text-heading">{item.value}</p>
+                <p className="text-sm text-gray-400 md:text-text-body">{item.label}</p>
               </div>
             ))}
           </div>
@@ -351,8 +393,14 @@ export default function HomePage() {
             Expert signals across every market segment — pick your trading style, we deliver the profits
           </p>
 
+          {/* Mobile: horizontal carousel · Desktop: stacked cards */}
+          <div
+            ref={offerCarouselRef}
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 md:block md:overflow-visible md:gap-0 md:pb-0 scrollbar-hide"
+          >
+
           {/* Intraday */}
-          <div id="intraday" className="scroll-reveal mb-10 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div id="intraday" className="min-w-full snap-start flex-shrink-0 md:min-w-0 scroll-reveal mb-0 md:mb-10 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="md:flex">
               <div className="md:w-1/3 bg-gradient-to-br from-brand-emerald to-emerald-600 p-8 flex flex-col justify-center text-white">
                 <svg className="w-10 h-10 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -385,7 +433,7 @@ export default function HomePage() {
           </div>
 
           {/* F&O */}
-          <div id="fno" className="scroll-reveal mb-10 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div id="fno" className="min-w-full snap-start flex-shrink-0 md:min-w-0 scroll-reveal mb-0 md:mb-10 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="md:flex md:flex-row-reverse">
               <div className="md:w-1/3 bg-gradient-to-br from-blue-600 to-indigo-700 p-8 flex flex-col justify-center text-white">
                 <svg className="w-10 h-10 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -418,7 +466,7 @@ export default function HomePage() {
           </div>
 
           {/* MTF */}
-          <div id="mtf" className="scroll-reveal mb-10 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div id="mtf" className="min-w-full snap-start flex-shrink-0 md:min-w-0 scroll-reveal mb-0 md:mb-10 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="md:flex">
               <div className="md:w-1/3 bg-gradient-to-br from-amber-500 to-orange-600 p-8 flex flex-col justify-center text-white">
                 <svg className="w-10 h-10 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -451,7 +499,7 @@ export default function HomePage() {
           </div>
 
           {/* Long Term */}
-          <div id="longterm" className="scroll-reveal mb-10 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div id="longterm" className="min-w-full snap-start flex-shrink-0 md:min-w-0 scroll-reveal mb-0 md:mb-10 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="md:flex md:flex-row-reverse">
               <div className="md:w-1/3 bg-gradient-to-br from-purple-600 to-violet-700 p-8 flex flex-col justify-center text-white">
                 <svg className="w-10 h-10 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -484,7 +532,7 @@ export default function HomePage() {
           </div>
 
           {/* Short Term */}
-          <div id="shortterm" className="scroll-reveal mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div id="shortterm" className="min-w-full snap-start flex-shrink-0 md:min-w-0 scroll-reveal mb-0 md:mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="md:flex">
               <div className="md:w-1/3 bg-gradient-to-br from-teal-500 to-cyan-600 p-8 flex flex-col justify-center text-white">
                 <svg className="w-10 h-10 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -514,6 +562,8 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
+          </div>
+
           </div>
 
           {/* All segments CTA */}
@@ -708,11 +758,11 @@ export default function HomePage() {
           <p className="text-lg opacity-90 mb-8 scroll-reveal">
             Join thousands of traders who trust TheOneTrade for accurate, timely signals.
           </p>
-          <div className="flex flex-wrap justify-center gap-4 mb-6 scroll-reveal">
-            <Link href="/register" className="inline-block bg-white text-brand-emerald px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors">
+          <div className="flex justify-center gap-2 sm:gap-4 mb-6 scroll-reveal">
+            <Link href="/register" className="inline-block bg-white text-brand-emerald px-4 py-3 sm:px-8 sm:py-4 rounded-lg font-bold text-sm sm:text-lg hover:bg-gray-100 transition-colors">
               Get Started Now
             </Link>
-            <Link href="/signals" className="inline-block border-2 border-white/40 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white/10 transition-colors">
+            <Link href="/signals" className="inline-block border-2 border-white/40 text-white px-4 py-3 sm:px-8 sm:py-4 rounded-lg font-semibold text-sm sm:text-lg hover:bg-white/10 transition-colors">
               View Signals
             </Link>
           </div>
