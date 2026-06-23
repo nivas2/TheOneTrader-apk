@@ -4,8 +4,12 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { SEGMENT_LABELS, SUBCATEGORY_LABELS } from '@/lib/labels';
+import { useAuth } from '@/context/AuthContext';
 
 export default function CreateSignalPage() {
+  const { user } = useAuth();
+  const isSubAdmin = user?.role === 'SUBADMIN';
+  const userAllowedSegments = user?.allowedSegments || [];
   const [formData, setFormData] = useState({
     segment: 'INTRADAY',
     subCategory: 'EQUITY',
@@ -47,9 +51,13 @@ export default function CreateSignalPage() {
   }, []);
 
   // Derive segments/categories: prefer config, fall back to hardcoded labels
-  const SEGMENTS = configSegments.length > 0
+  const ALL_SEGMENTS = configSegments.length > 0
     ? configSegments.map((s) => s.key)
     : Object.keys(SEGMENT_LABELS);
+  // Sub-admins only see their allowed segments
+  const SEGMENTS = (isSubAdmin && userAllowedSegments.length > 0)
+    ? ALL_SEGMENTS.filter((s) => userAllowedSegments.includes(s))
+    : ALL_SEGMENTS;
   const segmentLabelMap: Record<string, string> = configSegments.length > 0
     ? Object.fromEntries(configSegments.map((s) => [s.key, s.label]))
     : SEGMENT_LABELS;

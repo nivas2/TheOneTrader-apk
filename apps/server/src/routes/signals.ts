@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate';
 import { authMiddleware, optionalAuthMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { adminGuard } from '../middleware/adminGuard';
+import { adminGuard, mainAdminGuard } from '../middleware/adminGuard';
+import { User } from '../models/User';
 import { subscriptionGuard, maskSignalData } from '../middleware/subscriptionGuard';
 import { Signal } from '../models/Signal';
 import { Config } from '../models/Config';
@@ -34,7 +35,16 @@ const updateStatusSchema = z.object({
 // Admin: create signal
 router.post('/', authMiddleware, adminGuard, validate(createSignalSchema), async (req: AuthRequest, res: Response) => {
   try {
-    const signal = await Signal.create(req.body);
+    // Sub-admin segment restriction
+    if (req.userRole === 'SUBADMIN') {
+      const user = await User.findById(req.userId);
+      if (user && user.allowedSegments.length > 0 && !user.allowedSegments.includes(req.body.segment)) {
+        res.status(403).json({ success: false, error: 'You are not allowed to create signals for this segment' });
+        return;
+      }
+    }
+
+    const signal = await Signal.create({ ...req.body, createdBy: req.userId });
     broadcastSignal(signal).catch(console.error);
     sendSignalFCM(signal).catch(console.error);
     relaySignalToDebugger(signal.toObject());
@@ -60,6 +70,11 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response) 
     const skip = (page - 1) * limit;
 
     const filter: any = {};
+
+    // Sub-admin: only see own signals
+    if (req.userRole === 'SUBADMIN') {
+      filter.createdBy = req.userId;
+    }
 
     // Date filtering
     if (req.query.startDate) {
@@ -95,8 +110,8 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response) 
       .limit(limit);
 
     const total = await Signal.countDocuments(filter);
-    // Admin sees unmasked data; others masked unless subscriptionGuard set requiresPremium=false
-    const shouldMask = req.userRole === 'ADMIN' ? false : (req as any).requiresPremium !== false;
+    // Admin/SubAdmin sees unmasked data; others masked unless subscriptionGuard set requiresPremium=false
+    const shouldMask = (req.userRole === 'ADMIN' || req.userRole === 'SUBADMIN') ? false : (req as any).requiresPremium !== false;
 
     const data = signals.map((s) => maskSignalData(s.toObject(), shouldMask));
 
@@ -120,6 +135,45 @@ router.get('/showcase', async (_req: Request, res: Response) => {
       .sort({ createdAt: -1 })
       .limit(12);
     res.json({ success: true, data: signals.map((s) => s.toObject()) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Admin: signals created by sub-admins
+router.get('/by-subadmins', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const subadminUsers = await User.find({ role: 'SUBADMIN' }).select('_id');
+    const subadminIds = subadminUsers.map((u) => u._id);
+
+    const filter: any = { createdBy: { $in: subadminIds } };
+
+    if (req.query.startDate) {
+      filter.createdAt = { ...filter.createdAt, $gte: new Date(req.query.startDate as string) };
+    }
+    if (req.query.endDate) {
+      const endDate = new Date(req.query.endDate as string);
+      endDate.setHours(23, 59, 59, 999);
+      filter.createdAt = { ...filter.createdAt, $lte: endDate };
+    }
+
+    const signals = await Signal.find(filter)
+      .populate('createdBy', 'name')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Signal.countDocuments(filter);
+
+    res.json({
+      success: true,
+      data: signals.map((s) => s.toObject()),
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

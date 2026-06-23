@@ -12,6 +12,7 @@ export interface IConfigDocument extends Document {
   whatsappActive: boolean;
   promotionalBanners: string[];
   paymentQrImagePath: string;
+  upiId: string;
   termsAndConditions: string;
   whatsappPhone: string;
   signalIntervals: IConfigInterval[];
@@ -32,6 +33,7 @@ const ConfigSchema = new Schema<IConfigDocument>(
     whatsappActive: { type: Boolean, default: true },
     promotionalBanners: [{ type: String }],
     paymentQrImagePath: { type: String, default: '' },
+    upiId: { type: String, default: '' },
     termsAndConditions: { type: String, default: '' },
     whatsappPhone: { type: String, default: '' },
     signalIntervals: {

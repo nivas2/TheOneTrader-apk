@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { adminGuard } from '../middleware/adminGuard';
+import { mainAdminGuard } from '../middleware/adminGuard';
 import { Plan } from '../models/Plan';
 
 const router = Router();
@@ -16,7 +16,7 @@ router.get('/public', async (_req: Request, res: Response) => {
 });
 
 // Admin: get all plans
-router.get('/', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
+router.get('/', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const plans = await Plan.find().sort({ segment: 1, planType: 1 });
     res.json({ success: true, data: plans });
@@ -26,7 +26,7 @@ router.get('/', authMiddleware, adminGuard, async (_req: AuthRequest, res: Respo
 });
 
 // Admin: create plan
-router.post('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.post('/', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const plan = await Plan.create(req.body);
     res.status(201).json({ success: true, data: plan });
@@ -36,7 +36,7 @@ router.post('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Respo
 });
 
 // Admin: update plan
-router.put('/:id', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.put('/:id', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const plan = await Plan.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!plan) {
@@ -49,7 +49,7 @@ router.put('/:id', authMiddleware, adminGuard, async (req: AuthRequest, res: Res
 });
 
 // Admin: delete plan
-router.delete('/:id', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.delete('/:id', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     await Plan.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Plan deleted' });

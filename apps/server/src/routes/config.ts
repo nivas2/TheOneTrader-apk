@@ -2,9 +2,9 @@ import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { adminGuard } from '../middleware/adminGuard';
+import { mainAdminGuard } from '../middleware/adminGuard';
 import { Config } from '../models/Config';
-import { uploadApk } from '../config/multer';
+import { uploadApk, uploadPaymentQr } from '../config/multer';
 
 const router = Router();
 
@@ -43,7 +43,7 @@ router.get('/public', async (_req: Request, res: Response) => {
 });
 
 // Admin: get full config
-router.get('/', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
+router.get('/', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const config = await getOrCreateConfig();
     res.json({ success: true, data: config });
@@ -53,7 +53,7 @@ router.get('/', authMiddleware, adminGuard, async (_req: AuthRequest, res: Respo
 });
 
 // Admin: update config
-router.put('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.put('/', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const config = await getOrCreateConfig();
     const allowedFields = [
@@ -63,6 +63,7 @@ router.put('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Respon
       'whatsappActive',
       'promotionalBanners',
       'paymentQrImagePath',
+      'upiId',
       'termsAndConditions',
       'whatsappPhone',
       'signalIntervals',
@@ -84,10 +85,50 @@ router.put('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Respon
   }
 });
 
+// ── Payment QR Management ──────────────────────────────────
+
+// Admin: upload payment QR image
+router.post('/payment-qr/upload', authMiddleware, mainAdminGuard, uploadPaymentQr.single('qrImage'), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No QR image uploaded' });
+    }
+    const config = await getOrCreateConfig();
+    // Delete old QR file if exists
+    if (config.paymentQrImagePath) {
+      const oldPath = path.resolve(config.paymentQrImagePath);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
+    config.paymentQrImagePath = req.file.path;
+    await config.save();
+    res.json({ success: true, data: { paymentQrImagePath: config.paymentQrImagePath } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Public: get payment config (UPI ID + QR availability)
+router.get('/payment-config', async (_req: Request, res: Response) => {
+  try {
+    const config = await getOrCreateConfig();
+    res.json({
+      success: true,
+      data: {
+        hasQrImage: !!config.paymentQrImagePath,
+        upiId: config.upiId || '',
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ── APK Management ──────────────────────────────────────
 
 // Admin: upload APK
-router.post('/app/upload', authMiddleware, adminGuard, uploadApk.single('apk'), async (req: AuthRequest, res: Response) => {
+router.post('/app/upload', authMiddleware, mainAdminGuard, uploadApk.single('apk'), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No APK file uploaded' });
@@ -155,7 +196,7 @@ router.get('/app/download', async (_req: Request, res: Response) => {
 });
 
 // Admin: delete APK
-router.delete('/app/delete', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
+router.delete('/app/delete', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const config = await getOrCreateConfig();
     if (config.apkFileName) {

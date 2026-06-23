@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { adminGuard } from '../middleware/adminGuard';
+import { mainAdminGuard } from '../middleware/adminGuard';
 import { User } from '../models/User';
 import { Subscription } from '../models/Subscription';
 import { Notification } from '../models/Notification';
@@ -13,7 +13,7 @@ import { NOTIFICATION_TYPES } from '@theonetrade/shared-types';
 const router = Router();
 
 // GET /templates — return available templates
-router.get('/templates', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
+router.get('/templates', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
   res.json({ success: true, data: NOTIFICATION_TEMPLATES });
 });
 
@@ -29,7 +29,7 @@ const sendSchema = z.object({
 });
 
 // POST /send — admin sends manual push notification
-router.post('/send', authMiddleware, adminGuard, validate(sendSchema), async (req: AuthRequest, res: Response) => {
+router.post('/send', authMiddleware, mainAdminGuard, validate(sendSchema), async (req: AuthRequest, res: Response) => {
   try {
     const { title, body, recipientType, segment, userId, variables, data } = req.body;
 
@@ -193,7 +193,7 @@ router.post('/send', authMiddleware, adminGuard, validate(sendSchema), async (re
 });
 
 // GET /history — paginated notification log
-router.get('/history', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.get('/history', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -219,7 +219,7 @@ router.get('/history', authMiddleware, adminGuard, async (req: AuthRequest, res:
 });
 
 // GET /users/search — search users for individual targeting
-router.get('/users/search', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.get('/users/search', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const q = req.query.q as string;
     if (!q || q.length < 2) {

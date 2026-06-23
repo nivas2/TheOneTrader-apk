@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import StarRating from '@/components/StarRating';
+import { REVIEW_STATUS_LABELS } from '@/lib/labels';
 import toast from 'react-hot-toast';
 
 export default function ReviewsPage() {
@@ -102,7 +103,7 @@ export default function ReviewsPage() {
                     review.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
                     'bg-yellow-100 text-yellow-800'
                   }`}>
-                    {review.status}
+                    {REVIEW_STATUS_LABELS[review.status] || review.status}
                   </span>
                 </div>
                 <p className="mt-2 text-text-body">{review.comment}</p>

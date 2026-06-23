@@ -13,6 +13,7 @@ export interface ISignalDocument extends Document {
   note?: string;
   showcaseOnLanding: boolean;
   status: string;
+  createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +49,7 @@ const SignalSchema = new Schema<ISignalDocument>(
       enum: ['ACTIVE', 'HIT_TARGET', 'HIT_SL', 'SAFE_EXIT', 'CANCELLED'],
       default: 'ACTIVE',
     },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );
@@ -55,5 +57,6 @@ const SignalSchema = new Schema<ISignalDocument>(
 SignalSchema.index({ status: 1 });
 SignalSchema.index({ segment: 1, status: 1 });
 SignalSchema.index({ createdAt: -1 });
+SignalSchema.index({ createdBy: 1 });
 
 export const Signal = mongoose.model<ISignalDocument>('Signal', SignalSchema);

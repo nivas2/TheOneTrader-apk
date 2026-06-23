@@ -73,6 +73,39 @@ export const uploadApk = multer({
   },
 });
 
+// Payment QR upload configuration
+const paymentUploadDir = './uploads/payment';
+if (!fs.existsSync(paymentUploadDir)) {
+  fs.mkdirSync(paymentUploadDir, { recursive: true });
+}
+
+const paymentStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, paymentUploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `payment-qr-${Date.now()}${ext}`);
+  },
+});
+
+const paymentFileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.'));
+  }
+};
+
+export const uploadPaymentQr = multer({
+  storage: paymentStorage,
+  fileFilter: paymentFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+});
+
 // Hero image upload configuration
 const heroUploadDir = './uploads/hero';
 if (!fs.existsSync(heroUploadDir)) {

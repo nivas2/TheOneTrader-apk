@@ -116,6 +116,8 @@ export async function loginUser(email: string, password: string, platform: strin
       role: user.role,
       isVerified: user.isVerified,
       createdAt: user.createdAt,
+      allowedPages: user.allowedPages || [],
+      allowedSegments: user.allowedSegments || [],
     },
   };
 }

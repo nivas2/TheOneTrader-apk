@@ -57,6 +57,8 @@ export default function PaymentPage() {
   const [showAllPlans, setShowAllPlans] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
 
+  const [paymentUpiId, setPaymentUpiId] = useState('');
+
   useEffect(() => {
     api.get('/public/plans/public')
       .then((res) => setPlans(res.data.data))
@@ -64,6 +66,10 @@ export default function PaymentPage() {
       .finally(() => setIsLoadingPlans(false));
 
     fetchMySubscriptions();
+
+    api.get('/public/config/payment-config')
+      .then((res) => setPaymentUpiId(res.data.data?.upiId || ''))
+      .catch(() => {});
   }, []);
 
   const fetchMySubscriptions = () => {
@@ -382,6 +388,11 @@ export default function PaymentPage() {
               className="w-48 h-48 rounded-lg mx-auto object-contain bg-white"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
+            {paymentUpiId && (
+              <p className="text-sm text-text-body mt-3 select-all font-mono bg-white rounded-lg px-3 py-2 border border-gray-200 inline-block">
+                {paymentUpiId}
+              </p>
+            )}
             <p className="text-sm font-semibold text-brand-emerald mt-3">
               Pay exactly {selectedPlan?.currency} {selectedPlan?.price.toLocaleString()}
             </p>

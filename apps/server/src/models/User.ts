@@ -16,7 +16,9 @@ export interface IUserDocument extends Document {
   deviceToken?: string;
   deviceTokens: IDeviceToken[];
   currentSessionId?: string;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN' | 'SUBADMIN';
+  allowedPages: string[];
+  allowedSegments: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,7 +43,9 @@ const UserSchema = new Schema<IUserDocument>(
     deviceToken: { type: String },
     deviceTokens: { type: [DeviceTokenSchema], default: [] },
     currentSessionId: { type: String },
-    role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
+    role: { type: String, enum: ['USER', 'ADMIN', 'SUBADMIN'], default: 'USER' },
+    allowedPages: [{ type: String }],
+    allowedSegments: [{ type: String }],
   },
   { timestamps: true }
 );

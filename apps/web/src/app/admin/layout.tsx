@@ -19,6 +19,7 @@ const adminLinks = [
   { href: '/admin/reviews', label: 'Reviews', icon: '⭐' },
   { href: '/admin/landing-page', label: 'Landing Page', icon: '🎨' },
   { href: '/admin/notifications', label: 'Notifications', icon: '🔔' },
+  { href: '/admin/sub-admins', label: 'Sub-Admins', icon: '🔑' },
   { href: '/admin/config', label: 'Settings', icon: '⚙️' },
 ];
 
@@ -31,11 +32,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const fcmRegistered = useRef(false);
   const { showNotification } = useBrowserNotification();
 
+  const isAdmin = user?.role === 'ADMIN';
+  const isSubAdmin = user?.role === 'SUBADMIN';
+
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
         router.push('/login');
-      } else if (user.role !== 'ADMIN') {
+      } else if (user.role !== 'ADMIN' && user.role !== 'SUBADMIN') {
         router.push('/signals');
       }
     }
@@ -43,7 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Register admin FCM token on mount
   useEffect(() => {
-    if (!user || user.role !== 'ADMIN' || fcmRegistered.current) return;
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUBADMIN') || fcmRegistered.current) return;
     fcmRegistered.current = true;
 
     (async () => {
@@ -78,9 +82,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     () => {}
   );
 
-  if (isLoading || !user || user.role !== 'ADMIN') {
+  if (isLoading || !user || (user.role !== 'ADMIN' && user.role !== 'SUBADMIN')) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
+
+  // Filter sidebar links for sub-admins
+  const allowedPages = user.allowedPages || [];
+  const visibleLinks = isSubAdmin
+    ? adminLinks.filter((link) => {
+        // Sub-admins always see signals pages
+        if (link.href === '/admin/signals' || link.href === '/admin/signals/history') return true;
+        // Check allowed pages
+        return allowedPages.includes(link.href);
+      })
+    : adminLinks;
 
   const sidebarContent = (
     <>
@@ -89,7 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <button onClick={() => setSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
       </div>
       <nav className="mt-4">
-        {adminLinks.map((link) => (
+        {visibleLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
@@ -110,7 +125,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ))}
       </nav>
       <div className="absolute bottom-4 left-0 right-0 px-6">
-        <button onClick={logout} className="text-sm text-gray-500 hover:text-signal-red transition-colors">
+        <button
+          onClick={logout}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-red-400/30 bg-red-500/10 text-red-400 text-sm font-medium hover:bg-red-500 hover:text-white transition-all"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
           Logout
         </button>
       </div>
@@ -146,7 +167,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {adminLinks.find((l) => l.href === pathname)?.label || 'Admin'}
             </h1>
           </div>
-          <span className="text-sm text-text-body">Admin: {user.name}</span>
+          <span className="text-sm text-text-body">{isSubAdmin ? 'Sub-Admin' : 'Admin'}: {user.name}</span>
         </header>
         <div className="p-4 md:p-6">{children}</div>
       </main>

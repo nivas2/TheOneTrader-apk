@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { adminGuard } from '../middleware/adminGuard';
+import { mainAdminGuard } from '../middleware/adminGuard';
 import { LandingPageContent } from '../models/LandingPageContent';
 import { uploadHeroImage } from '../config/multer';
 
@@ -25,7 +25,7 @@ router.get('/public', async (_req: Request, res: Response) => {
 });
 
 // Admin: get landing page content for editing
-router.get('/', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
+router.get('/', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const content = await getOrCreateLandingContent();
     res.json({ success: true, data: content });
@@ -35,7 +35,7 @@ router.get('/', authMiddleware, adminGuard, async (_req: AuthRequest, res: Respo
 });
 
 // Admin: update landing page content by section
-router.put('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.put('/', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const content = await getOrCreateLandingContent();
     const allowedSections = [
@@ -70,7 +70,7 @@ router.put('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Respon
 router.post(
   '/upload-hero-image',
   authMiddleware,
-  adminGuard,
+  mainAdminGuard,
   uploadHeroImage.single('image'),
   async (req: AuthRequest, res: Response) => {
     try {

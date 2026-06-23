@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 const TABS = [
   { key: 'general', label: 'General' },
   { key: 'whatsapp', label: 'WhatsApp' },
+  { key: 'payment', label: 'Payment' },
   { key: 'intervals', label: 'Signal Intervals' },
   { key: 'segments', label: 'Segments' },
   { key: 'categories', label: 'Categories' },
@@ -33,6 +34,14 @@ export default function AdminConfigPage() {
   const [isSavingAccount, setIsSavingAccount] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
+  // Payment tab state
+  const [upiId, setUpiId] = useState('');
+  const [qrFile, setQrFile] = useState<File | null>(null);
+  const [qrPreview, setQrPreview] = useState<string | null>(null);
+  const [hasQrImage, setHasQrImage] = useState(false);
+  const [isUploadingQr, setIsUploadingQr] = useState(false);
+  const [isSavingUpi, setIsSavingUpi] = useState(false);
+
   // Mobile App tab state
   const [apkInfo, setApkInfo] = useState<any>(null);
   const [apkFile, setApkFile] = useState<File | null>(null);
@@ -42,11 +51,17 @@ export default function AdminConfigPage() {
 
   useEffect(() => {
     api.get('/config')
-      .then((res) => setConfig(res.data.data))
+      .then((res) => {
+        setConfig(res.data.data);
+        if (res.data.data?.upiId) setUpiId(res.data.data.upiId);
+      })
       .catch(() => {})
       .finally(() => setIsLoading(false));
     api.get('/config/app/info')
       .then((res) => setApkInfo(res.data.data))
+      .catch(() => {});
+    api.get('/public/config/payment-config')
+      .then((res) => setHasQrImage(res.data.data?.hasQrImage || false))
       .catch(() => {});
   }, []);
 
@@ -101,6 +116,41 @@ export default function AdminConfigPage() {
       toast.error(error.response?.data?.error || 'Failed to change password');
     } finally {
       setIsSavingPassword(false);
+    }
+  };
+
+  const handleUploadQr = async () => {
+    if (!qrFile) {
+      toast.error('Please select a QR image');
+      return;
+    }
+    setIsUploadingQr(true);
+    try {
+      const formData = new FormData();
+      formData.append('qrImage', qrFile);
+      await api.post('/config/payment-qr/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setHasQrImage(true);
+      setQrFile(null);
+      setQrPreview(null);
+      toast.success('QR image uploaded');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to upload QR image');
+    } finally {
+      setIsUploadingQr(false);
+    }
+  };
+
+  const handleSaveUpiId = async () => {
+    setIsSavingUpi(true);
+    try {
+      await api.put('/config', { upiId });
+      toast.success('UPI ID saved');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to save UPI ID');
+    } finally {
+      setIsSavingUpi(false);
     }
   };
 
@@ -185,7 +235,7 @@ export default function AdminConfigPage() {
   return (
     <div className="max-w-4xl">
       {/* Tab Navigation */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -272,6 +322,79 @@ export default function AdminConfigPage() {
               />
               <p className="text-xs text-gray-400 mt-1">Example: 919876543210 (91 = India code)</p>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'payment' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold">Payment QR Code</h3>
+              <p className="text-sm text-gray-500 mt-1">Upload the UPI QR code image shown to customers during payment.</p>
+            </div>
+
+            {/* Current QR Preview */}
+            {hasQrImage && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                <p className="text-sm font-medium text-gray-600 mb-2">Current QR Code</p>
+                <img
+                  src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/api/v1/public/payment-qr`}
+                  alt="Payment QR"
+                  className="w-48 h-48 mx-auto rounded-lg object-contain bg-white border"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+
+            {/* Upload New QR */}
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">Upload New QR Image</label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  setQrFile(f);
+                  if (f) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setQrPreview(reader.result as string);
+                    reader.readAsDataURL(f);
+                  } else {
+                    setQrPreview(null);
+                  }
+                }}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-emerald/10 file:text-brand-emerald hover:file:bg-brand-emerald/20 cursor-pointer"
+              />
+              <p className="text-xs text-gray-400 mt-1">Accepted: JPEG, PNG, WebP (max 5MB)</p>
+            </div>
+            {qrPreview && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                <p className="text-sm font-medium text-gray-600 mb-2">Preview</p>
+                <img src={qrPreview} alt="QR Preview" className="w-48 h-48 mx-auto rounded-lg object-contain bg-white border" />
+              </div>
+            )}
+            <button onClick={handleUploadQr} className="btn-primary py-2 px-6" disabled={isUploadingQr || !qrFile}>
+              {isUploadingQr ? 'Uploading...' : 'Upload QR Image'}
+            </button>
+
+            <hr className="border-gray-100" />
+
+            {/* UPI ID */}
+            <div>
+              <h3 className="text-lg font-semibold">UPI ID</h3>
+              <p className="text-sm text-gray-500 mt-1">Displayed below the QR code for manual UPI payments.</p>
+            </div>
+            <div>
+              <input
+                type="text"
+                className="input-field"
+                value={upiId}
+                onChange={(e) => setUpiId(e.target.value)}
+                placeholder="e.g. yourname@upi"
+              />
+            </div>
+            <button onClick={handleSaveUpiId} className="btn-primary py-2 px-6" disabled={isSavingUpi}>
+              {isSavingUpi ? 'Saving...' : 'Save UPI ID'}
+            </button>
           </div>
         )}
 
@@ -656,7 +779,7 @@ export default function AdminConfigPage() {
       </div>
 
       {/* Save Button - only show for config tabs, not account */}
-      {activeTab !== 'account' && activeTab !== 'mobileapp' && (
+      {activeTab !== 'account' && activeTab !== 'mobileapp' && activeTab !== 'payment' && (
         <button onClick={handleSave} className="btn-primary w-full mt-6" disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save Configuration'}
         </button>

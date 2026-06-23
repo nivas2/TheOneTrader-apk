@@ -12,6 +12,8 @@ interface User {
   role: string;
   isVerified: boolean;
   createdAt: string;
+  allowedPages?: string[];
+  allowedSegments?: string[];
 }
 
 interface AuthContextType {

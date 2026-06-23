@@ -28,6 +28,7 @@ import configRoutes from './routes/config';
 import planRoutes from './routes/plans';
 import notificationRoutes from './routes/notifications';
 import landingContentRoutes from './routes/landingContent';
+import subadminRoutes from './routes/subadmins';
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +56,7 @@ const authLimiter = rateLimit({
 // Static file serving for uploads
 app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
 app.use('/downloads', express.static(path.resolve('./uploads/app')));
+app.use('/uploads/payment', express.static(path.resolve('./uploads/payment')));
 
 // Routes
 app.use('/api/v1/auth', authLimiter, authRoutes);
@@ -77,6 +79,7 @@ app.use('/api/v1/public/plans', planRoutes);
 app.use('/api/v1/admin/notifications', notificationRoutes);
 app.use('/api/v1/landing-content', landingContentRoutes);
 app.use('/api/v1/public/landing-content', landingContentRoutes);
+app.use('/api/v1/admin/sub-admins', subadminRoutes);
 
 // Health check
 app.get('/api/v1/health', (_req, res) => {

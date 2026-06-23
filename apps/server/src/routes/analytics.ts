@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { Parser } from '@json2csv/plainjs';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { adminGuard } from '../middleware/adminGuard';
+import { mainAdminGuard } from '../middleware/adminGuard';
 import { Signal } from '../models/Signal';
 import { User } from '../models/User';
 import { Subscription } from '../models/Subscription';
@@ -9,7 +9,7 @@ import { Subscription } from '../models/Subscription';
 const router = Router();
 
 // Admin: signal analytics
-router.get('/signals', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
+router.get('/signals', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const totalSignals = await Signal.countDocuments();
     const activeSignals = await Signal.countDocuments({ status: 'ACTIVE' });
@@ -54,7 +54,7 @@ router.get('/signals', authMiddleware, adminGuard, async (_req: AuthRequest, res
 });
 
 // Admin: user analytics
-router.get('/users', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
+router.get('/users', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const totalUsers = await User.countDocuments({ role: 'USER' });
     const verifiedUsers = await User.countDocuments({ role: 'USER', isVerified: true });
@@ -97,7 +97,7 @@ router.get('/users', authMiddleware, adminGuard, async (_req: AuthRequest, res: 
 });
 
 // Admin: detailed user list with subscriptions
-router.get('/users/list', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.get('/users/list', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const {
       filter = 'all',
@@ -201,7 +201,7 @@ router.get('/users/list', authMiddleware, adminGuard, async (req: AuthRequest, r
 });
 
 // Admin: CSV export
-router.get('/export/csv', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.get('/export/csv', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const filter = req.query.filter as string || 'all';
     let users;
@@ -236,7 +236,7 @@ router.get('/export/csv', authMiddleware, adminGuard, async (req: AuthRequest, r
 });
 
 // Admin: toggle user active status
-router.put('/users/:id/toggle-active', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+router.put('/users/:id/toggle-active', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {

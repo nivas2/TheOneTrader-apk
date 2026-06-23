@@ -36,6 +36,12 @@ export const SIGNAL_STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Cancelled',
 };
 
+export const REVIEW_STATUS_LABELS: Record<string, string> = {
+  PENDING_REVIEW: 'Under Review',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+};
+
 export const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
   PENDING_APPROVAL: 'Pending Approval',
   PENDING_ACTIVATION: 'Approved (Activates Tomorrow)',
