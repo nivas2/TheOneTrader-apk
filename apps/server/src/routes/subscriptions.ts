@@ -122,7 +122,12 @@ router.get('/all', authMiddleware, adminGuard, async (req: AuthRequest, res: Res
     const { status } = req.query;
     const filter: any = {};
     if (status && status !== 'ALL') {
-      filter.status = status;
+      const statusStr = String(status);
+      if (statusStr.includes(',')) {
+        filter.status = { $in: statusStr.split(',').map((s: string) => s.trim()) };
+      } else {
+        filter.status = statusStr;
+      }
     }
     const subscriptions = await Subscription.find(filter)
       .populate('userId', 'name email phone')
