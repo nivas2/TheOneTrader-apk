@@ -28,6 +28,14 @@ export default function SignalHistoryAdminPage() {
   const [endDate, setEndDate] = useState(today);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filterAction, setFilterAction] = useState('');
+  const [filterSegment, setFilterSegment] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
+  // Available options from config
+  const [segmentOptions, setSegmentOptions] = useState<{ key: string; label: string }[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<{ key: string; label: string }[]>([]);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -44,9 +52,11 @@ export default function SignalHistoryAdminPage() {
       const data = res.data.data;
       if (data?.segments?.length) {
         setSegmentLabelMap(Object.fromEntries(data.segments.map((s: any) => [s.key, s.label])));
+        setSegmentOptions(data.segments.map((s: any) => ({ key: s.key, label: s.label })));
       }
       if (data?.categories?.length) {
         setCategoryLabelMap(Object.fromEntries(data.categories.map((c: any) => [c.key, c.label])));
+        setCategoryOptions(data.categories.map((c: any) => ({ key: c.key, label: c.label })));
       }
     }).catch(() => {});
   }, []);
@@ -68,6 +78,10 @@ export default function SignalHistoryAdminPage() {
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
     if (debouncedSearch) params.set('search', debouncedSearch);
+    if (filterAction) params.set('action', filterAction);
+    if (filterSegment) params.set('segment', filterSegment);
+    if (filterCategory) params.set('subCategory', filterCategory);
+    if (filterStatus) params.set('status', filterStatus);
 
     api.get(`/signals?${params.toString()}`)
       .then((res) => {
@@ -80,7 +94,7 @@ export default function SignalHistoryAdminPage() {
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [page, startDate, endDate, debouncedSearch]);
+  }, [page, startDate, endDate, debouncedSearch, filterAction, filterSegment, filterCategory, filterStatus]);
 
   useEffect(() => {
     fetchSignals();
@@ -117,6 +131,10 @@ export default function SignalHistoryAdminPage() {
     setStartDate(today);
     setEndDate(today);
     setSearch('');
+    setFilterAction('');
+    setFilterSegment('');
+    setFilterCategory('');
+    setFilterStatus('');
     setPage(1);
   };
 
@@ -186,20 +204,18 @@ export default function SignalHistoryAdminPage() {
 
       {/* Filters Row */}
       <div className="card mb-4 p-4">
+        {/* Row 1: Search + Dates */}
         <div className="flex flex-col sm:flex-row gap-3 items-end flex-wrap">
-          {/* Search */}
           <div className="flex-1 min-w-[200px]">
             <label className="block text-xs font-medium text-gray-500 mb-1">Search</label>
             <input
               type="text"
-              placeholder="Search instrument, segment, category..."
+              placeholder="Search instrument..."
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-
-          {/* Start Date */}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
             <input
@@ -209,8 +225,6 @@ export default function SignalHistoryAdminPage() {
               onChange={(e) => handleDateChange('start', e.target.value)}
             />
           </div>
-
-          {/* End Date */}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
             <input
@@ -220,21 +234,70 @@ export default function SignalHistoryAdminPage() {
               onChange={(e) => handleDateChange('end', e.target.value)}
             />
           </div>
-
-          {/* Action Buttons */}
           <div className="flex gap-2">
-            <button
-              onClick={showAllDates}
-              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
+            <button onClick={showAllDates} className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
               All Dates
             </button>
-            <button
-              onClick={clearFilters}
-              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
+            <button onClick={clearFilters} className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
               Reset
             </button>
+          </div>
+        </div>
+
+        {/* Row 2: Column filters */}
+        <div className="flex flex-col sm:flex-row gap-3 mt-3 flex-wrap">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Action</label>
+            <select
+              value={filterAction}
+              onChange={(e) => { setFilterAction(e.target.value); setPage(1); }}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald bg-white min-w-[100px]"
+            >
+              <option value="">All</option>
+              <option value="BUY">BUY</option>
+              <option value="SELL">SELL</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Segment</label>
+            <select
+              value={filterSegment}
+              onChange={(e) => { setFilterSegment(e.target.value); setPage(1); }}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald bg-white min-w-[120px]"
+            >
+              <option value="">All</option>
+              {segmentOptions.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
+            <select
+              value={filterCategory}
+              onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald bg-white min-w-[120px]"
+            >
+              <option value="">All</option>
+              {categoryOptions.map((c) => (
+                <option key={c.key} value={c.key}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+            <select
+              value={filterStatus}
+              onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald bg-white min-w-[130px]"
+            >
+              <option value="">All</option>
+              <option value="ACTIVE">Active</option>
+              <option value="HIT_TARGET">Target Hit</option>
+              <option value="HIT_SL">SL Hit</option>
+              <option value="SAFE_EXIT">Safe Exit</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
           </div>
         </div>
 

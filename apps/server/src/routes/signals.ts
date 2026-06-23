@@ -99,9 +99,18 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response) 
       ];
     }
 
-    // Status filtering
+    // Column-level filters
     if (req.query.status) {
       filter.status = req.query.status;
+    }
+    if (req.query.action) {
+      filter.action = req.query.action;
+    }
+    if (req.query.segment) {
+      filter.segment = req.query.segment;
+    }
+    if (req.query.subCategory) {
+      filter.subCategory = req.query.subCategory;
     }
 
     const signals = await Signal.find(filter)

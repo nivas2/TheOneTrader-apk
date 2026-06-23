@@ -37,12 +37,12 @@ export default function PricingSection() {
         </p>
 
         {/* Segment Filter Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 mb-10">
+        <div className="flex overflow-x-auto scrollbar-hide justify-start sm:justify-center gap-2 mb-10 pb-1">
           {SEGMENT_FILTERS.map((seg) => (
             <button
               key={seg.key}
               onClick={() => setFilter(seg.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 filter === seg.key
                   ? 'bg-brand-emerald text-white'
                   : 'bg-white text-text-body border border-gray-200 hover:border-brand-emerald hover:text-brand-emerald'

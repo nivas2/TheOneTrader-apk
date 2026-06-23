@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -16,11 +17,13 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === '/';
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
     window.dispatchEvent(new CustomEvent('selectSegment', { detail: id }));
+    setMobileOpen(false);
   };
 
   return (
@@ -31,6 +34,7 @@ export default function Navbar() {
             <span className="text-2xl font-bold text-brand-emerald">TheOneTrade</span>
           </Link>
 
+          {/* Desktop nav */}
           <div className="hidden md:flex items-center space-x-6">
             <Link href="/" className="text-text-body hover:text-brand-emerald transition-colors">
               Home
@@ -52,12 +56,12 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             {user ? (
               <>
                 <Link
                   href={user.role === 'ADMIN' ? '/admin/dashboard' : '/signals'}
-                  className="text-text-body hover:text-brand-emerald"
+                  className="text-text-body hover:text-brand-emerald hidden sm:inline"
                 >
                   {user.name}
                 </Link>
@@ -67,7 +71,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/login" className="text-text-body hover:text-brand-emerald">
+                <Link href="/login" className="text-text-body hover:text-brand-emerald text-sm">
                   Login
                 </Link>
                 <Link href="/register" className="btn-primary text-sm py-2 px-4">
@@ -75,9 +79,61 @@ export default function Navbar() {
                 </Link>
               </>
             )}
+
+            {/* Hamburger button - mobile only */}
+            {isHome && (
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                aria-label="Toggle menu"
+              >
+                {mobileOpen ? (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Mobile dropdown menu */}
+      {mobileOpen && isHome && (
+        <div className="md:hidden border-t border-gray-100 bg-white shadow-lg">
+          <div className="px-4 py-3 space-y-1">
+            <Link
+              href="/"
+              onClick={() => setMobileOpen(false)}
+              className="block px-3 py-2.5 rounded-lg text-text-body hover:bg-brand-emerald/5 hover:text-brand-emerald transition-colors font-medium"
+            >
+              Home
+            </Link>
+            {SEGMENTS.map((seg) => (
+              <button
+                key={seg.id}
+                onClick={() => scrollToSection(seg.id)}
+                className="block w-full text-left px-3 py-2.5 rounded-lg text-text-body hover:bg-brand-emerald/5 hover:text-brand-emerald transition-colors text-sm font-medium"
+              >
+                {seg.label}
+              </button>
+            ))}
+            {user && (
+              <Link
+                href="/signals"
+                onClick={() => setMobileOpen(false)}
+                className="block px-3 py-2.5 rounded-lg text-text-body hover:bg-brand-emerald/5 hover:text-brand-emerald transition-colors font-medium"
+              >
+                Signals
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

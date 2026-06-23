@@ -1018,7 +1018,7 @@ export default function HomePage() {
       {/* ── FOMO Toast ── */}
       {fomoToast && (
         <div
-          className={`fixed bottom-6 left-6 z-50 bg-white border border-gray-200 rounded-xl px-5 py-3 shadow-xl max-w-xs ${
+          className={`fixed bottom-4 left-4 right-4 sm:right-auto sm:left-6 sm:bottom-6 z-50 bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-xl sm:max-w-xs ${
             fomoToast.visible ? 'animate-toast-in' : 'animate-toast-out'
           }`}
         >
