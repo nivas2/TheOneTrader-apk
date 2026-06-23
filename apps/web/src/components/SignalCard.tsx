@@ -22,7 +22,7 @@ export default function SignalCard({ signal, onAcknowledge, showAcknowledge }: S
   };
 
   return (
-    <div className={`card relative ${isActive ? 'border-l-4' : ''} ${isBuy ? 'border-l-signal-green' : 'border-l-signal-red'}`}>
+    <div className={`card relative ${isActive ? 'border-l-4' : 'border-l-4 opacity-50 grayscale-[30%]'} ${isBuy ? 'border-l-signal-green' : 'border-l-signal-red'}`}>
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-2">
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${isBuy ? 'bg-signal-green text-white' : 'bg-signal-red text-white'}`}>

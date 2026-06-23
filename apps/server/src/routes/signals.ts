@@ -212,12 +212,30 @@ router.get('/history/public', async (req: Request, res: Response) => {
   }
 });
 
-// Client: active signals
+// Client: today's signals (active + inactive for current IST date)
 router.get('/active', authMiddleware, subscriptionGuard, async (req: AuthRequest, res: Response) => {
   try {
     const isAdmin = req.userRole === 'ADMIN';
     const subscribedSegments: string[] = (req as any).subscribedSegments || [];
-    const filter: any = { status: 'ACTIVE' };
+
+    // Calculate start/end of today in IST (UTC+5:30)
+    const now = new Date();
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const nowIST = new Date(now.getTime() + IST_OFFSET);
+    const startOfDayIST = new Date(nowIST);
+    startOfDayIST.setHours(0, 0, 0, 0);
+    const endOfDayIST = new Date(nowIST);
+    endOfDayIST.setHours(23, 59, 59, 999);
+    // Convert back to UTC for DB query
+    const startUTC = new Date(startOfDayIST.getTime() - IST_OFFSET);
+    const endUTC = new Date(endOfDayIST.getTime() - IST_OFFSET);
+
+    const filter: any = {
+      $or: [
+        { status: 'ACTIVE' },
+        { createdAt: { $gte: startUTC, $lte: endUTC } },
+      ],
+    };
 
     if (!isAdmin && subscribedSegments.length > 0) {
       filter.segment = { $in: subscribedSegments };

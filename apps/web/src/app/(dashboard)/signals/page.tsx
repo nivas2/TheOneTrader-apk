@@ -119,7 +119,6 @@ export default function SignalsPage() {
   const onSignalUpdate = useCallback((data: any) => {
     setSignals((prev) =>
       prev.map((s) => (s._id === data.signal._id ? data.signal : s))
-        .filter((s) => s.status === 'ACTIVE')
     );
   }, []);
 
@@ -304,7 +303,7 @@ export default function SignalsPage() {
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Active Signals ({signals.length})</h2>
+        <h2 className="text-xl font-bold">Today&apos;s Signals ({signals.length})</h2>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
           <span className="text-sm text-gray-500">Live</span>
@@ -353,12 +352,17 @@ export default function SignalsPage() {
 
       {signals.length === 0 && !isNonSubscriber ? (
         <div className="card text-center py-12">
-          <p className="text-text-body">No active signals right now.</p>
+          <p className="text-text-body">No signals for today yet.</p>
           <p className="text-sm text-gray-400 mt-2">New signals will appear here in real-time.</p>
         </div>
       ) : signals.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {signals.map((signal) => (
+          {[...signals].sort((a, b) => {
+            // Active signals first, then by createdAt desc
+            if (a.status === 'ACTIVE' && b.status !== 'ACTIVE') return -1;
+            if (a.status !== 'ACTIVE' && b.status === 'ACTIVE') return 1;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }).map((signal) => (
             <SignalCard
               key={signal._id}
               signal={signal}
