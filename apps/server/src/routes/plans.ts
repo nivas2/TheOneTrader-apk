@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { mainAdminGuard } from '../middleware/adminGuard';
+import { adminGuard, mainAdminGuard } from '../middleware/adminGuard';
 import { Plan } from '../models/Plan';
 
 const router = Router();
@@ -15,8 +15,8 @@ router.get('/public', async (_req: Request, res: Response) => {
   }
 });
 
-// Admin: get all plans
-router.get('/', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
+// Admin: get all plans (sub-admins need this for signal creation)
+router.get('/', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const plans = await Plan.find().sort({ segment: 1, planType: 1 });
     res.json({ success: true, data: plans });

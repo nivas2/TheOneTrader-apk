@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { mainAdminGuard } from '../middleware/adminGuard';
+import { adminGuard, mainAdminGuard } from '../middleware/adminGuard';
 import { Config } from '../models/Config';
 import { uploadApk, uploadPaymentQr } from '../config/multer';
 
@@ -42,8 +42,8 @@ router.get('/public', async (_req: Request, res: Response) => {
   }
 });
 
-// Admin: get full config
-router.get('/', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
+// Admin: get full config (sub-admins need this for instruments/segments)
+router.get('/', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const config = await getOrCreateConfig();
     res.json({ success: true, data: config });

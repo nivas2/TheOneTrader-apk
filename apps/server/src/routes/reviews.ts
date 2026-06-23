@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { mainAdminGuard } from '../middleware/adminGuard';
+import { adminGuard } from '../middleware/adminGuard';
 import { Review } from '../models/Review';
 import { User } from '../models/User';
 import { Subscription } from '../models/Subscription';
@@ -71,7 +71,7 @@ router.get('/public', async (_req: Request, res: Response) => {
 });
 
 // Admin: get all reviews
-router.get('/all', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
+router.get('/all', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const reviews = await Review.find().sort({ createdAt: -1 });
     res.json({ success: true, data: reviews });
@@ -81,7 +81,7 @@ router.get('/all', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res
 });
 
 // Admin: moderate review
-router.put('/:id/moderate', authMiddleware, mainAdminGuard, validate(moderateSchema), async (req: AuthRequest, res: Response) => {
+router.put('/:id/moderate', authMiddleware, adminGuard, validate(moderateSchema), async (req: AuthRequest, res: Response) => {
   try {
     const update: any = { status: req.body.status };
     if (typeof req.body.displayOnLandingPage === 'boolean') {

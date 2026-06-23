@@ -3,7 +3,7 @@ import { z } from 'zod';
 import path from 'path';
 import { validate } from '../middleware/validate';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { mainAdminGuard } from '../middleware/adminGuard';
+import { adminGuard } from '../middleware/adminGuard';
 import { upload } from '../config/multer';
 import { Subscription } from '../models/Subscription';
 import { User } from '../models/User';
@@ -105,7 +105,7 @@ router.post(
 );
 
 // Admin: list pending subscriptions
-router.get('/pending', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
+router.get('/pending', authMiddleware, adminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const subscriptions = await Subscription.find({ status: 'PENDING_APPROVAL' })
       .populate('userId', 'name email phone')
@@ -117,7 +117,7 @@ router.get('/pending', authMiddleware, mainAdminGuard, async (_req: AuthRequest,
 });
 
 // Admin: list all subscriptions with optional status filter
-router.get('/all', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
+router.get('/all', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.query;
     const filter: any = {};
@@ -139,7 +139,7 @@ router.get('/all', authMiddleware, mainAdminGuard, async (req: AuthRequest, res:
 });
 
 // Admin: approve subscription
-router.put('/:id/approve', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
+router.put('/:id/approve', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const subscription = await Subscription.findById(req.params.id);
     if (!subscription) {
@@ -209,7 +209,7 @@ router.put('/:id/approve', authMiddleware, mainAdminGuard, async (req: AuthReque
 });
 
 // Admin: reject subscription
-router.put('/:id/reject', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
+router.put('/:id/reject', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
   try {
     const { reason } = req.body;
     if (!reason || !reason.trim()) {
