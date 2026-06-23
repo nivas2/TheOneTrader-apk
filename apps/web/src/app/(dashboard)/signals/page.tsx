@@ -90,6 +90,7 @@ export default function SignalsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [subState, setSubState] = useState<SubState | null>(null);
   const [liveLockedCount, setLiveLockedCount] = useState(0);
+  const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   useEffect(() => {
     api.get('/signals/active')
@@ -302,11 +303,32 @@ export default function SignalsPage() {
         </>
       )}
 
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Today&apos;s Signals ({signals.length})</h2>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-          <span className="text-sm text-gray-500">Live</span>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold">Today&apos;s Signals</h2>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span className="text-sm text-gray-500">Live</span>
+          </div>
+        </div>
+        <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+          {([
+            { key: 'all', label: 'All', count: signals.length },
+            { key: 'active', label: 'Active', count: signals.filter((s) => s.status === 'ACTIVE').length },
+            { key: 'inactive', label: 'Inactive', count: signals.filter((s) => s.status !== 'ACTIVE').length },
+          ] as const).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                filter === tab.key
+                  ? 'bg-white text-brand-emerald shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
         </div>
       </div>
 
@@ -350,28 +372,49 @@ export default function SignalsPage() {
         </div>
       )}
 
-      {signals.length === 0 && !isNonSubscriber ? (
-        <div className="card text-center py-12">
-          <p className="text-text-body">No signals for today yet.</p>
-          <p className="text-sm text-gray-400 mt-2">New signals will appear here in real-time.</p>
-        </div>
-      ) : signals.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...signals].sort((a, b) => {
-            // Active signals first, then by createdAt desc
-            if (a.status === 'ACTIVE' && b.status !== 'ACTIVE') return -1;
-            if (a.status !== 'ACTIVE' && b.status === 'ACTIVE') return 1;
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          }).map((signal) => (
-            <SignalCard
-              key={signal._id}
-              signal={signal}
-              onAcknowledge={handleAcknowledge}
-              showAcknowledge
-            />
-          ))}
-        </div>
-      ) : null}
+      {(() => {
+        const filtered = signals.filter((s) => {
+          if (filter === 'active') return s.status === 'ACTIVE';
+          if (filter === 'inactive') return s.status !== 'ACTIVE';
+          return true;
+        });
+        const sorted = [...filtered].sort((a, b) => {
+          if (a.status === 'ACTIVE' && b.status !== 'ACTIVE') return -1;
+          if (a.status !== 'ACTIVE' && b.status === 'ACTIVE') return 1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
+        if (signals.length === 0 && !isNonSubscriber) {
+          return (
+            <div className="card text-center py-12">
+              <p className="text-text-body">No signals for today yet.</p>
+              <p className="text-sm text-gray-400 mt-2">New signals will appear here in real-time.</p>
+            </div>
+          );
+        }
+        if (sorted.length === 0 && signals.length > 0) {
+          return (
+            <div className="card text-center py-12">
+              <p className="text-text-body">No {filter === 'active' ? 'active' : 'inactive'} signals right now.</p>
+            </div>
+          );
+        }
+        if (sorted.length > 0) {
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sorted.map((signal) => (
+                <SignalCard
+                  key={signal._id}
+                  signal={signal}
+                  onAcknowledge={handleAcknowledge}
+                  showAcknowledge
+                />
+              ))}
+            </div>
+          );
+        }
+        return null;
+      })()}
     </div>
   );
 }
