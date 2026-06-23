@@ -27,6 +27,27 @@ export interface ILandingPageContentDocument extends Document {
     statusLabel: string;
     badgeLabel: string;
   };
+  heroCards: {
+    type: 'trade' | 'banner';
+    // Trade card fields
+    action?: string;
+    instrument?: string;
+    segment?: string;
+    category?: string;
+    entryMin?: string;
+    entryMax?: string;
+    target?: string;
+    stopLoss?: string;
+    pnl?: string;
+    statusLabel?: string;
+    badgeLabel?: string;
+    // Banner fields
+    heading?: string;
+    description?: string;
+    bgGradient?: string;
+    ctaText?: string;
+    ctaLink?: string;
+  }[];
   socialProof: { value: string; label: string }[];
   whatWeOffer: {
     heading: string;
@@ -121,6 +142,67 @@ const LandingPageContentSchema = new Schema<ILandingPageContentDocument>(
       pnl: { type: String, default: '+24.8%' },
       statusLabel: { type: String, default: 'Target Hit' },
       badgeLabel: { type: String, default: 'Live Signal' },
+    },
+    heroCards: {
+      type: [
+        {
+          type: { type: String, enum: ['trade', 'banner'], default: 'trade' },
+          action: { type: String },
+          instrument: { type: String },
+          segment: { type: String },
+          category: { type: String },
+          entryMin: { type: String },
+          entryMax: { type: String },
+          target: { type: String },
+          stopLoss: { type: String },
+          pnl: { type: String },
+          statusLabel: { type: String },
+          badgeLabel: { type: String },
+          heading: { type: String },
+          description: { type: String },
+          bgGradient: { type: String },
+          ctaText: { type: String },
+          ctaLink: { type: String },
+        },
+      ],
+      default: [
+        {
+          type: 'trade',
+          action: 'BUY',
+          instrument: 'RELIANCE',
+          segment: 'Intraday',
+          category: 'Equity',
+          entryMin: '₹2,540',
+          entryMax: '₹2,555',
+          target: '₹2,620',
+          stopLoss: '₹2,510',
+          pnl: '+24.8%',
+          statusLabel: 'Target Hit',
+          badgeLabel: 'Top Signal',
+        },
+        {
+          type: 'trade',
+          action: 'BUY',
+          instrument: 'TATA MOTORS',
+          segment: 'F&O',
+          category: 'Options',
+          entryMin: '₹890',
+          entryMax: '₹895',
+          target: '₹950',
+          stopLoss: '₹870',
+          pnl: '+18.5%',
+          statusLabel: 'Target Hit',
+          badgeLabel: 'Top Signal',
+        },
+        {
+          type: 'banner',
+          heading: 'Join 2,500+ Traders',
+          description: 'Get expert signals across all market segments with 85%+ accuracy',
+          bgGradient: 'from-brand-emerald to-emerald-700',
+          ctaText: 'Start Free Trial',
+          ctaLink: '/register',
+        },
+      ],
     },
     socialProof: {
       type: [{ value: { type: String }, label: { type: String } }],

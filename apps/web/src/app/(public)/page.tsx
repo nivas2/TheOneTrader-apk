@@ -93,6 +93,44 @@ const DEFAULT_CONTENT = {
     statusLabel: 'Target Hit',
     badgeLabel: 'Live Signal',
   },
+  heroCards: [
+    {
+      type: 'trade' as const,
+      action: 'BUY',
+      instrument: 'RELIANCE',
+      segment: 'Intraday',
+      category: 'Equity',
+      entryMin: '₹2,540',
+      entryMax: '₹2,555',
+      target: '₹2,620',
+      stopLoss: '₹2,510',
+      pnl: '+24.8%',
+      statusLabel: 'Target Hit',
+      badgeLabel: 'Top Signal',
+    },
+    {
+      type: 'trade' as const,
+      action: 'BUY',
+      instrument: 'TATA MOTORS',
+      segment: 'F&O',
+      category: 'Options',
+      entryMin: '₹890',
+      entryMax: '₹895',
+      target: '₹950',
+      stopLoss: '₹870',
+      pnl: '+18.5%',
+      statusLabel: 'Target Hit',
+      badgeLabel: 'Top Signal',
+    },
+    {
+      type: 'banner' as const,
+      heading: 'Join 2,500+ Traders',
+      description: 'Get expert signals across all market segments with 85%+ accuracy',
+      bgGradient: 'from-brand-emerald to-emerald-700',
+      ctaText: 'Start Free Trial',
+      ctaLink: '/register',
+    },
+  ],
   socialProof: [
     { value: '2,500+', label: 'Active Traders' },
     { value: '85%+', label: 'Win Rate' },
@@ -272,6 +310,7 @@ export default function HomePage() {
   const [isApp, setIsApp] = useState(false);
   const [content, setContent] = useState(DEFAULT_CONTENT);
   const [activeSegment, setActiveSegment] = useState<string | null>(null);
+  const [heroCardIndex, setHeroCardIndex] = useState(0);
 
   // FOMO
   const [profitCounter, setProfitCounter] = useState(1247350);
@@ -490,6 +529,16 @@ export default function HomePage() {
     };
   }, []);
 
+  // Hero carousel auto-rotation
+  const heroCards = content.heroCards || [];
+  useEffect(() => {
+    if (heroCards.length <= 1) return;
+    const interval = setInterval(() => {
+      setHeroCardIndex((prev) => (prev + 1) % heroCards.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [heroCards.length]);
+
   if (isApp) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -500,7 +549,7 @@ export default function HomePage() {
 
   const formatINR = (num: number) => num.toLocaleString('en-IN');
 
-  const { hero, mockTradeCard: mtc, socialProof, whatWeOffer, howItWorks, signalPreview, countdown: ctd, finalCTA } = content;
+  const { hero, socialProof, whatWeOffer, howItWorks, signalPreview, countdown: ctd, finalCTA } = content;
 
   return (
     <>
@@ -562,39 +611,89 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Mock trade card */}
-            <div className="hidden lg:flex justify-center">
-              <div className="animate-float bg-white border border-gray-100 rounded-2xl p-6 w-80 shadow-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${mtc.action === 'BUY' ? 'bg-signal-green' : 'bg-signal-red'} text-white`}>{mtc.action}</span>
-                  <span className="text-xs text-gray-400">{mtc.badgeLabel}</span>
+            {/* Hero Carousel */}
+            {heroCards.length > 0 && (
+              <div className="hidden lg:flex flex-col items-center gap-4">
+                <div className="relative w-80 h-[280px]">
+                  {heroCards.map((card: any, i: number) => {
+                    const isActive = i === heroCardIndex;
+                    return (
+                      <div
+                        key={i}
+                        className={`absolute inset-0 transition-all duration-500 ease-in-out ${
+                          isActive ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+                        }`}
+                      >
+                        {card.type === 'banner' ? (
+                          /* Banner Card */
+                          <div className={`bg-gradient-to-br ${card.bgGradient || 'from-brand-emerald to-emerald-700'} rounded-2xl p-6 w-80 h-full shadow-xl flex flex-col justify-center text-white`}>
+                            <h3 className="text-2xl font-bold mb-3">{card.heading}</h3>
+                            <p className="text-white/80 text-sm mb-6 leading-relaxed">{card.description}</p>
+                            {card.ctaText && (
+                              <Link
+                                href={card.ctaLink || '/register'}
+                                className="inline-flex items-center self-start px-5 py-2.5 bg-white text-gray-900 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors"
+                              >
+                                {card.ctaText}
+                                <svg className="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                              </Link>
+                            )}
+                          </div>
+                        ) : (
+                          /* Trade Card */
+                          <div className="animate-float bg-white border border-gray-100 rounded-2xl p-6 w-80 shadow-xl">
+                            <div className="flex justify-between items-center mb-4">
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${card.action === 'BUY' ? 'bg-signal-green' : 'bg-signal-red'} text-white`}>{card.action}</span>
+                              <span className="text-xs text-gray-400">{card.badgeLabel}</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-text-heading mb-1">{card.instrument}</h3>
+                            <p className="text-sm text-gray-400 mb-4">{card.segment} · {card.category}</p>
+                            <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                              <div>
+                                <p className="text-gray-400">Entry</p>
+                                <p className="font-semibold text-text-heading">{card.entryMin} - {card.entryMax}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400">Target</p>
+                                <p className="font-semibold text-signal-green">{card.target}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400">Stop Loss</p>
+                                <p className="font-semibold text-signal-red">{card.stopLoss}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400">P&L</p>
+                                <p className="font-semibold text-signal-green">{card.pnl}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                              <span className="w-2 h-2 rounded-full bg-signal-green animate-live-dot" />
+                              <span className="text-xs text-signal-green font-medium">{card.statusLabel}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <h3 className="text-xl font-bold text-text-heading mb-1">{mtc.instrument}</h3>
-                <p className="text-sm text-gray-400 mb-4">{mtc.segment} · {mtc.category}</p>
-                <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-                  <div>
-                    <p className="text-gray-400">Entry</p>
-                    <p className="font-semibold text-text-heading">{mtc.entryMin} - {mtc.entryMax}</p>
+                {/* Carousel Dots */}
+                {heroCards.length > 1 && (
+                  <div className="flex gap-2">
+                    {heroCards.map((_: any, i: number) => (
+                      <button
+                        key={i}
+                        onClick={() => setHeroCardIndex(i)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                          i === heroCardIndex ? 'bg-brand-emerald w-6' : 'bg-gray-300 hover:bg-gray-400'
+                        }`}
+                      />
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-gray-400">Target</p>
-                    <p className="font-semibold text-signal-green">{mtc.target}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Stop Loss</p>
-                    <p className="font-semibold text-signal-red">{mtc.stopLoss}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">P&L</p>
-                    <p className="font-semibold text-signal-green">{mtc.pnl}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                  <span className="w-2 h-2 rounded-full bg-signal-green animate-live-dot" />
-                  <span className="text-xs text-signal-green font-medium">{mtc.statusLabel}</span>
-                </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </section>

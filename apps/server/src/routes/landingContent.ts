@@ -40,6 +40,7 @@ router.put('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Respon
     const allowedSections = [
       'hero',
       'mockTradeCard',
+      'heroCards',
       'socialProof',
       'whatWeOffer',
       'performance',

@@ -223,35 +223,311 @@ export default function AdminLandingPage() {
           </div>
         </Section>
 
-        {/* Mock Trade Card */}
+        {/* Hero Carousel Cards */}
         <Section
-          title="Mock Trade Card"
-          isOpen={!!openSections.mockTradeCard}
-          onToggle={() => toggleSection('mockTradeCard')}
-          onSave={() => saveSection('mockTradeCard')}
-          saving={savingSection === 'mockTradeCard'}
+          title="Hero Carousel Cards"
+          isOpen={!!openSections.heroCards}
+          onToggle={() => toggleSection('heroCards')}
+          onSave={() => saveSection('heroCards')}
+          saving={savingSection === 'heroCards'}
         >
-          <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
-              <InputField label="Action (BUY/SELL)" value={content.mockTradeCard?.action} onChange={(v) => updateField('mockTradeCard', 'action', v)} />
-              <InputField label="Instrument" value={content.mockTradeCard?.instrument} onChange={(v) => updateField('mockTradeCard', 'instrument', v)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <InputField label="Segment" value={content.mockTradeCard?.segment} onChange={(v) => updateField('mockTradeCard', 'segment', v)} />
-              <InputField label="Category" value={content.mockTradeCard?.category} onChange={(v) => updateField('mockTradeCard', 'category', v)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <InputField label="Entry Min" value={content.mockTradeCard?.entryMin} onChange={(v) => updateField('mockTradeCard', 'entryMin', v)} />
-              <InputField label="Entry Max" value={content.mockTradeCard?.entryMax} onChange={(v) => updateField('mockTradeCard', 'entryMax', v)} />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <InputField label="Target" value={content.mockTradeCard?.target} onChange={(v) => updateField('mockTradeCard', 'target', v)} />
-              <InputField label="Stop Loss" value={content.mockTradeCard?.stopLoss} onChange={(v) => updateField('mockTradeCard', 'stopLoss', v)} />
-              <InputField label="P&L" value={content.mockTradeCard?.pnl} onChange={(v) => updateField('mockTradeCard', 'pnl', v)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <InputField label="Status Label" value={content.mockTradeCard?.statusLabel} onChange={(v) => updateField('mockTradeCard', 'statusLabel', v)} />
-              <InputField label="Badge Label" value={content.mockTradeCard?.badgeLabel} onChange={(v) => updateField('mockTradeCard', 'badgeLabel', v)} />
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">These cards rotate in the hero section carousel. You can add trade showcase cards or custom promotional banners.</p>
+            {(content.heroCards || []).map((card: any, i: number) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm text-gray-700">Card #{i + 1}</span>
+                  <div className="flex items-center gap-3">
+                    {/* Move up/down */}
+                    {i > 0 && (
+                      <button
+                        onClick={() => {
+                          const cards = [...content.heroCards];
+                          [cards[i - 1], cards[i]] = [cards[i], cards[i - 1]];
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                      >
+                        Move Up
+                      </button>
+                    )}
+                    {i < (content.heroCards || []).length - 1 && (
+                      <button
+                        onClick={() => {
+                          const cards = [...content.heroCards];
+                          [cards[i], cards[i + 1]] = [cards[i + 1], cards[i]];
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                      >
+                        Move Down
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        const cards = content.heroCards.filter((_: any, idx: number) => idx !== i);
+                        setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                      }}
+                      className="text-sm text-red-500 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                {/* Card Type Selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Card Type</label>
+                  <select
+                    value={card.type || 'trade'}
+                    onChange={(e) => {
+                      const cards = [...content.heroCards];
+                      cards[i] = { ...cards[i], type: e.target.value };
+                      setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+                  >
+                    <option value="trade">Trade Card (Showcase a winning signal)</option>
+                    <option value="banner">Custom Banner (Promotional / Ad)</option>
+                  </select>
+                </div>
+
+                {card.type === 'banner' ? (
+                  /* Banner card fields */
+                  <div className="grid gap-3 bg-purple-50 rounded-lg p-3">
+                    <InputField
+                      label="Heading"
+                      value={card.heading || ''}
+                      onChange={(v) => {
+                        const cards = [...content.heroCards];
+                        cards[i] = { ...cards[i], heading: v };
+                        setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                      }}
+                      placeholder="e.g. Join 2,500+ Traders"
+                    />
+                    <TextareaField
+                      label="Description"
+                      value={card.description || ''}
+                      onChange={(v) => {
+                        const cards = [...content.heroCards];
+                        cards[i] = { ...cards[i], description: v };
+                        setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                      }}
+                      rows={2}
+                      placeholder="e.g. Get expert signals with 85%+ accuracy"
+                    />
+                    <InputField
+                      label="Background Gradient"
+                      value={card.bgGradient || ''}
+                      onChange={(v) => {
+                        const cards = [...content.heroCards];
+                        cards[i] = { ...cards[i], bgGradient: v };
+                        setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                      }}
+                      placeholder="e.g. from-brand-emerald to-emerald-700"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <InputField
+                        label="CTA Button Text"
+                        value={card.ctaText || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], ctaText: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. Start Free Trial"
+                      />
+                      <InputField
+                        label="CTA Button Link"
+                        value={card.ctaLink || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], ctaLink: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. /register"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* Trade card fields */
+                  <div className="grid gap-3 bg-green-50 rounded-lg p-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
+                        <select
+                          value={card.action || 'BUY'}
+                          onChange={(e) => {
+                            const cards = [...content.heroCards];
+                            cards[i] = { ...cards[i], action: e.target.value };
+                            setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+                        >
+                          <option value="BUY">BUY</option>
+                          <option value="SELL">SELL</option>
+                        </select>
+                      </div>
+                      <InputField
+                        label="Instrument"
+                        value={card.instrument || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], instrument: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. RELIANCE"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <InputField
+                        label="Segment"
+                        value={card.segment || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], segment: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. Intraday"
+                      />
+                      <InputField
+                        label="Category"
+                        value={card.category || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], category: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. Equity"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <InputField
+                        label="Entry Min"
+                        value={card.entryMin || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], entryMin: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. ₹2,540"
+                      />
+                      <InputField
+                        label="Entry Max"
+                        value={card.entryMax || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], entryMax: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. ₹2,555"
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <InputField
+                        label="Target"
+                        value={card.target || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], target: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. ₹2,620"
+                      />
+                      <InputField
+                        label="Stop Loss"
+                        value={card.stopLoss || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], stopLoss: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. ₹2,510"
+                      />
+                      <InputField
+                        label="P&L"
+                        value={card.pnl || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], pnl: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. +24.8%"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <InputField
+                        label="Status Label"
+                        value={card.statusLabel || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], statusLabel: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. Target Hit"
+                      />
+                      <InputField
+                        label="Badge Label"
+                        value={card.badgeLabel || ''}
+                        onChange={(v) => {
+                          const cards = [...content.heroCards];
+                          cards[i] = { ...cards[i], badgeLabel: v };
+                          setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                        }}
+                        placeholder="e.g. Top Signal"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Add Card Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const cards = [
+                    ...(content.heroCards || []),
+                    {
+                      type: 'trade',
+                      action: 'BUY',
+                      instrument: '',
+                      segment: '',
+                      category: '',
+                      entryMin: '',
+                      entryMax: '',
+                      target: '',
+                      stopLoss: '',
+                      pnl: '',
+                      statusLabel: 'Target Hit',
+                      badgeLabel: 'Top Signal',
+                    },
+                  ];
+                  setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                }}
+                className="text-sm text-brand-emerald hover:underline"
+              >
+                + Add Trade Card
+              </button>
+              <button
+                onClick={() => {
+                  const cards = [
+                    ...(content.heroCards || []),
+                    {
+                      type: 'banner',
+                      heading: '',
+                      description: '',
+                      bgGradient: 'from-brand-emerald to-emerald-700',
+                      ctaText: '',
+                      ctaLink: '/register',
+                    },
+                  ];
+                  setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                }}
+                className="text-sm text-purple-600 hover:underline"
+              >
+                + Add Banner Card
+              </button>
             </div>
           </div>
         </Section>
