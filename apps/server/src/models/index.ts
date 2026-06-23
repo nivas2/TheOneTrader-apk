@@ -6,3 +6,4 @@ export { Lead } from './Lead';
 export { Otp } from './Otp';
 export { Config } from './Config';
 export { Plan } from './Plan';
+export { LandingPageContent } from './LandingPageContent';

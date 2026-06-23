@@ -20,6 +20,7 @@ export default function Navbar() {
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
+    window.dispatchEvent(new CustomEvent('selectSegment', { detail: id }));
   };
 
   return (

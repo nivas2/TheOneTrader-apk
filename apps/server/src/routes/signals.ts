@@ -110,6 +110,54 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response) 
   }
 });
 
+// Public: showcase signals for landing page (admin-curated, completed only, unmasked)
+router.get('/showcase', async (_req: Request, res: Response) => {
+  try {
+    const signals = await Signal.find({
+      showcaseOnLanding: true,
+      status: { $in: ['HIT_TARGET', 'HIT_SL', 'SAFE_EXIT'] },
+    })
+      .sort({ createdAt: -1 })
+      .limit(12);
+    res.json({ success: true, data: signals.map((s) => s.toObject()) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Public: signal history (unmasked, date-range gated by config)
+router.get('/history/public', async (req: Request, res: Response) => {
+  try {
+    const config = await Config.findOne();
+    const startDate = config?.publicHistoryStartDate || new Date('2024-01-01');
+    const endDate = config?.publicHistoryEndDate || new Date();
+
+    const filter: any = {
+      status: { $in: ['HIT_TARGET', 'HIT_SL', 'SAFE_EXIT'] },
+      createdAt: { $gte: startDate, $lte: endDate },
+    };
+
+    if (req.query.segment) {
+      filter.segment = req.query.segment;
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const signals = await Signal.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit);
+    const total = await Signal.countDocuments(filter);
+
+    res.json({
+      success: true,
+      data: signals.map((s) => s.toObject()),
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Client: active signals
 router.get('/active', authMiddleware, subscriptionGuard, async (req: AuthRequest, res: Response) => {
   try {
@@ -163,6 +211,22 @@ router.get('/history', authMiddleware, subscriptionGuard, async (req: AuthReques
       data,
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Admin: toggle showcase on landing page
+router.patch('/:id/showcase', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
+  try {
+    const signal = await Signal.findById(req.params.id);
+    if (!signal) {
+      res.status(404).json({ success: false, error: 'Signal not found' });
+      return;
+    }
+    signal.showcaseOnLanding = !signal.showcaseOnLanding;
+    await signal.save();
+    res.json({ success: true, data: signal });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

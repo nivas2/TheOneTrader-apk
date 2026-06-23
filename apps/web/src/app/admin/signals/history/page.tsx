@@ -90,6 +90,16 @@ export default function SignalHistoryAdminPage() {
     }
   };
 
+  const toggleShowcase = async (signalId: string, current: boolean) => {
+    try {
+      await api.patch(`/admin/signals/${signalId}/showcase`);
+      toast.success(current ? 'Removed from landing page' : 'Added to landing page showcase');
+      fetchSignals();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Toggle failed');
+    }
+  };
+
   const clearFilters = () => {
     setStartDate(today);
     setEndDate(today);
@@ -185,13 +195,14 @@ export default function SignalHistoryAdminPage() {
                 <th className="py-3 px-2 font-medium text-gray-500">Safe Exit</th>
                 <th className="py-3 px-2 font-medium text-gray-500">Status</th>
                 <th className="py-3 px-2 font-medium text-gray-500">Date</th>
+                <th className="py-3 px-2 font-medium text-gray-500">Showcase</th>
                 <th className="py-3 px-2 font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody>
               {signals.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="text-center py-8 text-gray-400">No signals found.</td>
+                  <td colSpan={13} className="text-center py-8 text-gray-400">No signals found.</td>
                 </tr>
               ) : (
                 signals.map((signal) => (
@@ -230,6 +241,15 @@ export default function SignalHistoryAdminPage() {
                       {new Date(signal.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       <br />
                       <span className="text-xs">{new Date(signal.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </td>
+                    <td className="py-3 px-2 text-center">
+                      <button
+                        onClick={() => toggleShowcase(signal._id, signal.showcaseOnLanding)}
+                        title={signal.showcaseOnLanding ? 'Remove from landing page' : 'Show on landing page'}
+                        className={`text-lg transition-colors ${signal.showcaseOnLanding ? 'text-yellow-500 hover:text-yellow-600' : 'text-gray-300 hover:text-yellow-400'}`}
+                      >
+                        {signal.showcaseOnLanding ? '\u2605' : '\u2606'}
+                      </button>
                     </td>
                     <td className="py-3 px-2">
                       {signal.status === 'ACTIVE' && (

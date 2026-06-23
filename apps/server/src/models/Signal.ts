@@ -11,6 +11,7 @@ export interface ISignalDocument extends Document {
   stopLoss: number;
   safeExit?: number;
   note?: string;
+  showcaseOnLanding: boolean;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -41,6 +42,7 @@ const SignalSchema = new Schema<ISignalDocument>(
     stopLoss: { type: Number, required: true },
     safeExit: { type: Number },
     note: { type: String },
+    showcaseOnLanding: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ['ACTIVE', 'HIT_TARGET', 'HIT_SL', 'SAFE_EXIT', 'CANCELLED'],

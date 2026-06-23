@@ -27,6 +27,7 @@ import analyticsRoutes from './routes/analytics';
 import configRoutes from './routes/config';
 import planRoutes from './routes/plans';
 import notificationRoutes from './routes/notifications';
+import landingContentRoutes from './routes/landingContent';
 
 const app = express();
 const server = http.createServer(app);
@@ -74,6 +75,8 @@ app.use('/api/v1/public/config', configRoutes);
 app.use('/api/v1/plans', planRoutes);
 app.use('/api/v1/public/plans', planRoutes);
 app.use('/api/v1/admin/notifications', notificationRoutes);
+app.use('/api/v1/landing-content', landingContentRoutes);
+app.use('/api/v1/public/landing-content', landingContentRoutes);
 
 // Health check
 app.get('/api/v1/health', (_req, res) => {
