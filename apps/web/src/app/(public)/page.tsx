@@ -641,6 +641,22 @@ export default function HomePage() {
                               </Link>
                             )}
                           </div>
+                        ) : card.type === 'image' ? (
+                          /* Image Card */
+                          <div className="bg-white border border-gray-100 rounded-2xl w-80 h-full shadow-xl flex flex-col overflow-hidden">
+                            {card.imageUrl && (
+                              <img
+                                src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}${card.imageUrl}`}
+                                alt={card.caption || 'Promotional image'}
+                                className="w-full h-[220px] object-cover"
+                              />
+                            )}
+                            {card.caption && (
+                              <div className="px-4 py-3 text-center">
+                                <p className="text-sm font-medium text-text-heading">{card.caption}</p>
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           /* Trade Card */
                           <div className="animate-float bg-white border border-gray-100 rounded-2xl p-6 w-80 shadow-xl">

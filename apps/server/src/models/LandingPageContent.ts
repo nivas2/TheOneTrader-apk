@@ -28,7 +28,7 @@ export interface ILandingPageContentDocument extends Document {
     badgeLabel: string;
   };
   heroCards: {
-    type: 'trade' | 'banner';
+    type: 'trade' | 'banner' | 'image';
     // Trade card fields
     action?: string;
     instrument?: string;
@@ -47,6 +47,9 @@ export interface ILandingPageContentDocument extends Document {
     bgGradient?: string;
     ctaText?: string;
     ctaLink?: string;
+    // Image card fields
+    imageUrl?: string;
+    caption?: string;
   }[];
   socialProof: { value: string; label: string }[];
   whatWeOffer: {
@@ -146,7 +149,7 @@ const LandingPageContentSchema = new Schema<ILandingPageContentDocument>(
     heroCards: {
       type: [
         {
-          type: { type: String, enum: ['trade', 'banner'], default: 'trade' },
+          type: { type: String, enum: ['trade', 'banner', 'image'], default: 'trade' },
           action: { type: String },
           instrument: { type: String },
           segment: { type: String },
@@ -163,6 +166,8 @@ const LandingPageContentSchema = new Schema<ILandingPageContentDocument>(
           bgGradient: { type: String },
           ctaText: { type: String },
           ctaLink: { type: String },
+          imageUrl: { type: String },
+          caption: { type: String },
         },
       ],
       default: [

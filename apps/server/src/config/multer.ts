@@ -72,3 +72,37 @@ export const uploadApk = multer({
     fileSize: 100 * 1024 * 1024, // 100MB
   },
 });
+
+// Hero image upload configuration
+const heroUploadDir = './uploads/hero';
+if (!fs.existsSync(heroUploadDir)) {
+  fs.mkdirSync(heroUploadDir, { recursive: true });
+}
+
+const heroStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, heroUploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const ext = path.extname(file.originalname);
+    cb(null, `hero-${uniqueSuffix}${ext}`);
+  },
+});
+
+const heroFileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.'));
+  }
+};
+
+export const uploadHeroImage = multer({
+  storage: heroStorage,
+  fileFilter: heroFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+});

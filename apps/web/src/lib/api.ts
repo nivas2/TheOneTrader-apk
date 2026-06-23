@@ -28,7 +28,8 @@ api.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+        window.location.href = `${basePath}/login`;
       }
     }
     return Promise.reject(error);

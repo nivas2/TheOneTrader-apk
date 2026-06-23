@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -177,14 +178,14 @@ export default function AdminLandingPage() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-text-heading">Landing Page Editor</h1>
-        <a
+        <Link
           href="/"
           target="_blank"
           rel="noopener noreferrer"
           className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
         >
           Preview Landing Page
-        </a>
+        </Link>
       </div>
 
       <div className="space-y-4">
@@ -289,6 +290,7 @@ export default function AdminLandingPage() {
                   >
                     <option value="trade">Trade Card (Showcase a winning signal)</option>
                     <option value="banner">Custom Banner (Promotional / Ad)</option>
+                    <option value="image">Image Card (Upload custom image)</option>
                   </select>
                 </div>
 
@@ -348,6 +350,57 @@ export default function AdminLandingPage() {
                         placeholder="e.g. /register"
                       />
                     </div>
+                  </div>
+                ) : card.type === 'image' ? (
+                  /* Image card fields */
+                  <div className="grid gap-3 bg-blue-50 rounded-lg p-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Upload Image</label>
+                      {card.imageUrl && (
+                        <div className="mb-2">
+                          <img
+                            src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}${card.imageUrl}`}
+                            alt="Hero card preview"
+                            className="w-40 h-28 object-cover rounded-lg border border-gray-200"
+                          />
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const formData = new FormData();
+                          formData.append('image', file);
+                          try {
+                            const res = await api.post('/landing-content/upload-hero-image', formData, {
+                              headers: { 'Content-Type': 'multipart/form-data' },
+                            });
+                            if (res.data.success) {
+                              const cards = [...content.heroCards];
+                              cards[i] = { ...cards[i], imageUrl: res.data.data.imageUrl };
+                              setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                              toast.success('Image uploaded');
+                            }
+                          } catch {
+                            toast.error('Failed to upload image');
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-300/20 focus:border-blue-400"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">JPEG, PNG, or WebP. Max 5MB.</p>
+                    </div>
+                    <InputField
+                      label="Caption"
+                      value={card.caption || ''}
+                      onChange={(v) => {
+                        const cards = [...content.heroCards];
+                        cards[i] = { ...cards[i], caption: v };
+                        setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                      }}
+                      placeholder="e.g. Special offer this month!"
+                    />
                   </div>
                 ) : (
                   /* Trade card fields */
@@ -527,6 +580,22 @@ export default function AdminLandingPage() {
                 className="text-sm text-purple-600 hover:underline"
               >
                 + Add Banner Card
+              </button>
+              <button
+                onClick={() => {
+                  const cards = [
+                    ...(content.heroCards || []),
+                    {
+                      type: 'image',
+                      imageUrl: '',
+                      caption: '',
+                    },
+                  ];
+                  setContent((prev: any) => ({ ...prev, heroCards: cards }));
+                }}
+                className="text-sm text-blue-600 hover:underline"
+              >
+                + Add Image Card
               </button>
             </div>
           </div>

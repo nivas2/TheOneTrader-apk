@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import { adminGuard } from '../middleware/adminGuard';
 import { LandingPageContent } from '../models/LandingPageContent';
+import { uploadHeroImage } from '../config/multer';
 
 const router = Router();
 
@@ -64,5 +65,24 @@ router.put('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Respon
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// Admin: upload hero card image
+router.post(
+  '/upload-hero-image',
+  authMiddleware,
+  adminGuard,
+  uploadHeroImage.single('image'),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No image file provided' });
+      }
+      const filePath = `/uploads/hero/${req.file.filename}`;
+      res.json({ success: true, data: { imageUrl: filePath } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
 
 export default router;
