@@ -47,7 +47,14 @@ router.post('/', authMiddleware, adminGuard, validate(createSignalSchema), async
     const signal = await Signal.create({ ...req.body, createdBy: req.userId });
     broadcastSignal(signal).catch(console.error);
     sendSignalFCM(signal).catch(console.error);
-    relaySignalToDebugger(signal.toObject());
+
+    // Include creator name in debugger relay
+    const creator = await User.findById(req.userId).select('name role');
+    relaySignalToDebugger({
+      ...signal.toObject(),
+      createdByName: creator?.name || 'Unknown',
+      createdByRole: creator?.role || 'ADMIN',
+    });
 
     // Auto-save instrument name to config for future dropdown use
     Config.updateOne(
