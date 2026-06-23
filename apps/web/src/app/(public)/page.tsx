@@ -557,28 +557,28 @@ export default function HomePage() {
       <LeadCaptureModal showEveryVisit />
 
       {/* ── Hero Section ── */}
-      <section className="relative bg-gradient-to-br from-white via-emerald-50/30 to-white overflow-hidden py-16 lg:py-24">
+      <section className="relative bg-gradient-to-br from-white via-emerald-50/30 to-white overflow-hidden py-10 md:py-16 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
             <div className="animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-brand-emerald/20 bg-brand-emerald/5 mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-brand-emerald/20 bg-brand-emerald/5 mb-4 md:mb-6">
                 <span className="w-2 h-2 rounded-full bg-brand-emerald animate-live-dot" />
-                <span className="text-sm text-brand-emerald font-medium">{hero.badgeText}</span>
+                <span className="text-xs md:text-sm text-brand-emerald font-medium">{hero.badgeText}</span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-text-heading leading-tight mb-6">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-text-heading leading-tight mb-4 md:mb-6">
                 {hero.headingLine1}{' '}
                 <span className="text-brand-emerald">{hero.headingLine2}</span>
               </h1>
 
-              <p className="text-lg text-text-body mb-8 h-7">
+              <p className="text-sm md:text-lg text-text-body mb-6 md:mb-8 min-h-[1.5rem] md:min-h-[1.75rem]">
                 {typewriterText}
                 <span className="animate-pulse text-brand-emerald">|</span>
               </p>
 
-              <div className="mb-8">
-                <p className="text-sm text-gray-500 mb-1">{hero.profitLabel}</p>
-                <p className="text-3xl sm:text-4xl font-bold text-brand-emerald">
+              <div className="mb-6 md:mb-8">
+                <p className="text-xs md:text-sm text-gray-500 mb-1">{hero.profitLabel}</p>
+                <p className="text-2xl sm:text-4xl font-bold text-brand-emerald">
                   ₹{formatINR(profitCounter)}+
                 </p>
               </div>
@@ -715,7 +715,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Social Proof Bar ── */}
-      <section className="relative bg-[#0A0A0F] md:bg-white border-y border-gray-800 md:border-gray-100 py-8 overflow-hidden">
+      <section className="relative bg-[#0A0A0F] md:bg-white border-y border-gray-800 md:border-gray-100 py-6 md:py-8 overflow-hidden">
         {/* Mobile animated green particles */}
         {[...Array(8)].map((_, i) => (
           <div
@@ -742,17 +742,17 @@ export default function HomePage() {
       </section>
 
       {/* ── What We Offer — Segment Categories ── */}
-      <section className="py-20 bg-brand-gray">
+      <section className="py-12 md:py-20 bg-brand-gray">
         <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-text-heading mb-3 scroll-reveal">{whatWeOffer.heading}</h2>
-          <p className="text-center text-text-body mb-14 scroll-reveal">
+          <h2 className="text-2xl md:text-3xl font-bold text-center text-text-heading mb-2 md:mb-3 scroll-reveal">{whatWeOffer.heading}</h2>
+          <p className="text-center text-text-body text-sm md:text-base mb-8 md:mb-14 scroll-reveal">
             {whatWeOffer.subheading}
           </p>
 
           {/* Mobile: horizontal carousel · Desktop: stacked cards */}
           <div
             ref={offerCarouselRef}
-            className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 md:block md:overflow-visible md:gap-0 md:pb-0 scrollbar-hide"
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:block md:overflow-visible md:gap-0 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
           >
 
           {whatWeOffer.segments.map((seg, i) => {
@@ -760,31 +760,30 @@ export default function HomePage() {
             const icon = SEGMENT_ICONS[i % SEGMENT_ICONS.length];
             const isLast = i === whatWeOffer.segments.length - 1;
             return (
-              <div key={seg.id} id={seg.id} className={`min-w-[80vw] snap-center flex-shrink-0 md:min-w-0 scroll-reveal mb-0 ${isLast ? 'md:mb-6' : 'md:mb-10'} bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden`}>
+              <div key={seg.id} id={seg.id} className={`w-[85vw] max-w-[85vw] snap-center flex-shrink-0 md:w-auto md:max-w-none scroll-reveal mb-0 ${isLast ? 'md:mb-6' : 'md:mb-10'} bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden`}>
                 <div className={`md:flex ${style.reverse ? 'md:flex-row-reverse' : ''}`}>
-                  <div className={`md:w-1/3 bg-gradient-to-br ${style.gradient} p-5 md:p-8 flex flex-col justify-center text-white`}>
-                    <svg className="w-10 h-10 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className={`md:w-1/3 bg-gradient-to-br ${style.gradient} p-4 md:p-8 flex flex-col justify-center text-white`}>
+                    <svg className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       {icon}
                     </svg>
-                    <h3 className="text-2xl font-bold mb-2">{seg.title}</h3>
-                    <p className="text-white/80">{seg.tagline}</p>
+                    <h3 className="text-lg md:text-2xl font-bold mb-1 md:mb-2">{seg.title}</h3>
+                    <p className="text-white/80 text-sm">{seg.tagline}</p>
                   </div>
-                  <div className="md:w-2/3 p-5 md:p-8">
-                    <p className="text-text-body mb-5">{seg.description}</p>
-                    <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="md:w-2/3 p-4 md:p-8">
+                    <p className="text-sm md:text-base text-text-body mb-3 md:mb-5 line-clamp-3 md:line-clamp-none">{seg.description}</p>
+                    <div className="grid gap-2 md:gap-4 md:grid-cols-2">
                       {seg.features.map((feat, j) => (
                         <div key={j} className="flex items-start gap-2">
-                          <svg className={`w-5 h-5 ${style.checkColor} mt-0.5 flex-shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className={`w-4 h-4 md:w-5 md:h-5 ${style.checkColor} mt-0.5 flex-shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                          <span className="text-sm text-text-body">{feat}</span>
+                          <span className="text-xs md:text-sm text-text-body">{feat}</span>
                         </div>
                       ))}
                     </div>
-                    {/* View Past Signals toggle */}
                     <button
                       onClick={() => setActiveSegment((prev) => prev === seg.id ? null : seg.id)}
-                      className={`mt-4 text-sm font-medium transition-colors ${
+                      className={`mt-3 md:mt-4 text-sm font-medium transition-colors ${
                         activeSegment === seg.id ? 'text-brand-emerald' : 'text-gray-400 hover:text-brand-emerald'
                       }`}
                     >
@@ -799,12 +798,19 @@ export default function HomePage() {
 
           </div>
 
+          {/* Carousel dots - mobile only */}
+          <div className="flex justify-center gap-1.5 mt-3 md:hidden">
+            {whatWeOffer.segments.map((_, i) => (
+              <span key={i} className="w-2 h-2 rounded-full bg-gray-300" />
+            ))}
+          </div>
+
           {/* All segments CTA */}
-          <div className="scroll-reveal text-center mt-10">
-            <div className="inline-block bg-white rounded-2xl shadow-sm border border-gray-100 px-10 py-8">
-              <h3 className="text-xl font-bold text-text-heading mb-2">{whatWeOffer.allSegmentsCTA.title}</h3>
-              <p className="text-text-body mb-5">{whatWeOffer.allSegmentsCTA.description}</p>
-              <Link href="/register" className="btn-primary text-lg px-8 py-3">
+          <div className="scroll-reveal text-center mt-8 md:mt-10">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-6 md:inline-block md:px-10 md:py-8">
+              <h3 className="text-lg md:text-xl font-bold text-text-heading mb-2">{whatWeOffer.allSegmentsCTA.title}</h3>
+              <p className="text-sm md:text-base text-text-body mb-4 md:mb-5">{whatWeOffer.allSegmentsCTA.description}</p>
+              <Link href="/register" className="btn-primary text-base md:text-lg px-6 py-2.5 md:px-8 md:py-3">
                 {whatWeOffer.allSegmentsCTA.buttonText}
               </Link>
             </div>
@@ -814,10 +820,10 @@ export default function HomePage() {
 
       {/* ── Performance Stats ── */}
       {performance && (
-        <section className="py-20 bg-white" ref={statsRef}>
+        <section className="py-12 md:py-20 bg-white" ref={statsRef}>
           <div className="max-w-6xl mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-3 scroll-reveal">{content.performance.heading}</h2>
-            <p className="text-center text-text-body mb-12 scroll-reveal">{content.performance.subheading}</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-2 md:mb-3 scroll-reveal">{content.performance.heading}</h2>
+            <p className="text-center text-text-body text-sm md:text-base mb-8 md:mb-12 scroll-reveal">{content.performance.subheading}</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
                 { value: `${winRate}%`, label: 'Win Rate', color: 'text-brand-emerald' },
@@ -839,10 +845,10 @@ export default function HomePage() {
       <PricingSection />
 
       {/* ── How It Works ── */}
-      <section className="py-20 bg-brand-gray">
+      <section className="py-12 md:py-20 bg-brand-gray">
         <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-3 scroll-reveal">{howItWorks.heading}</h2>
-          <p className="text-center text-text-body mb-12 scroll-reveal">{howItWorks.subheading}</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-2 md:mb-3 scroll-reveal">{howItWorks.heading}</h2>
+          <p className="text-center text-text-body text-sm md:text-base mb-8 md:mb-12 scroll-reveal">{howItWorks.subheading}</p>
           <div className="grid md:grid-cols-3 gap-8">
             {howItWorks.steps.map((item, i) => (
               <div key={i} className={`scroll-reveal scroll-delay-${i + 1} card relative group hover:shadow-lg hover:border-brand-emerald/20 transition-all`}>
@@ -863,14 +869,14 @@ export default function HomePage() {
       </section>
 
       {/* ── Signal Preview Grid ── */}
-      <section className="py-20 bg-white">
+      <section className="py-12 md:py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12 scroll-reveal">
+          <div className="text-center mb-8 md:mb-12 scroll-reveal">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-brand-emerald bg-brand-emerald/10 border border-brand-emerald/20 mb-4">
               {signalPreview.badgeText}
             </span>
-            <h2 className="text-3xl font-bold mb-3">{signalPreview.heading}</h2>
-            <p className="text-text-body">{signalPreview.subheading}</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-3">{signalPreview.heading}</h2>
+            <p className="text-sm md:text-base text-text-body">{signalPreview.subheading}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -957,9 +963,9 @@ export default function HomePage() {
       <TestimonialCarousel heading={content.testimonials.heading} />
 
       {/* ── Countdown / Urgency ── */}
-      <section className="py-20 bg-white">
+      <section className="py-12 md:py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-3 scroll-reveal">
+          <h2 className="text-2xl md:text-4xl font-bold mb-2 md:mb-3 scroll-reveal">
             {ctd.heading.includes('{spots}') ? (
               <>
                 {ctd.heading.split('{spots}')[0]}
@@ -999,10 +1005,10 @@ export default function HomePage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="py-16 bg-brand-emerald text-white text-center">
+      <section className="py-12 md:py-16 bg-brand-emerald text-white text-center">
         <div className="max-w-3xl mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 scroll-reveal">{finalCTA.heading}</h2>
-          <p className="text-lg opacity-90 mb-8 scroll-reveal">{finalCTA.subheading}</p>
+          <h2 className="text-2xl md:text-4xl font-bold mb-3 md:mb-4 scroll-reveal">{finalCTA.heading}</h2>
+          <p className="text-sm md:text-lg opacity-90 mb-6 md:mb-8 scroll-reveal">{finalCTA.subheading}</p>
           <div className="flex justify-center gap-2 sm:gap-4 mb-6 scroll-reveal">
             <Link href={finalCTA.primaryButtonLink} className="inline-block bg-white text-brand-emerald px-4 py-3 sm:px-8 sm:py-4 rounded-lg font-bold text-sm sm:text-lg hover:bg-gray-100 transition-colors">
               {finalCTA.primaryButtonText}

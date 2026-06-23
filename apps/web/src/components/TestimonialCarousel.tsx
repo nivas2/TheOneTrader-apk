@@ -58,9 +58,9 @@ export default function TestimonialCarousel({ dark = false, heading = 'What Our 
   const visibleReviews = reviews.slice(startIdx, startIdx + pageSize);
 
   return (
-    <section className={dark ? 'py-16 bg-[#0A0A0F]' : 'py-16 bg-brand-gray'}>
+    <section className={dark ? 'py-12 md:py-16 bg-[#0A0A0F]' : 'py-12 md:py-16 bg-brand-gray'}>
       <div className="max-w-6xl mx-auto px-4">
-        <h2 className={`text-3xl font-bold text-center mb-10 ${dark ? 'text-white' : ''}`}>{heading}</h2>
+        <h2 className={`text-2xl md:text-3xl font-bold text-center mb-6 md:mb-10 ${dark ? 'text-white' : ''}`}>{heading}</h2>
 
         <div className="relative">
           {/* Prev Arrow */}

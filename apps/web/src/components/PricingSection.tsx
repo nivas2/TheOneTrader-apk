@@ -29,10 +29,10 @@ export default function PricingSection() {
   const filteredPlans = filter === 'ALL' ? plans : plans.filter((p) => p.segment === filter);
 
   return (
-    <section className="py-20 bg-brand-gray">
+    <section className="py-12 md:py-20 bg-brand-gray">
       <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-3 scroll-reveal">Choose Your Plan</h2>
-        <p className="text-center text-text-body mb-10 scroll-reveal">
+        <h2 className="text-2xl md:text-3xl font-bold text-center mb-2 md:mb-3 scroll-reveal">Choose Your Plan</h2>
+        <p className="text-center text-text-body text-sm md:text-base mb-6 md:mb-10 scroll-reveal">
           Pick the plan that fits your trading style and budget
         </p>
 
