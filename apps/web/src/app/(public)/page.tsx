@@ -646,7 +646,7 @@ export default function HomePage() {
                           <div className="bg-white border border-gray-100 rounded-2xl w-80 h-full shadow-xl flex flex-col overflow-hidden">
                             {card.imageUrl && (
                               <img
-                                src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}${card.imageUrl}`}
+                                src={`${(() => { try { return new URL(process.env.NEXT_PUBLIC_API_URL || '').origin; } catch { return 'http://localhost:5000'; } })()}${card.imageUrl}`}
                                 alt={card.caption || 'Promotional image'}
                                 className="w-full h-[220px] object-cover"
                               />

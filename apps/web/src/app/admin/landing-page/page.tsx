@@ -359,7 +359,7 @@ export default function AdminLandingPage() {
                       {card.imageUrl && (
                         <div className="mb-2">
                           <img
-                            src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}${card.imageUrl}`}
+                            src={`${(() => { try { return new URL(process.env.NEXT_PUBLIC_API_URL || '').origin; } catch { return 'http://localhost:5000'; } })()}${card.imageUrl}`}
                             alt="Hero card preview"
                             className="w-40 h-28 object-cover rounded-lg border border-gray-200"
                           />
