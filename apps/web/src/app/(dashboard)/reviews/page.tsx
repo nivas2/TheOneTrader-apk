@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import StarRating from '@/components/StarRating';
-import { REVIEW_STATUS_LABELS } from '@/lib/labels';
 import toast from 'react-hot-toast';
 
 export default function ReviewsPage() {
@@ -98,13 +97,6 @@ export default function ReviewsPage() {
               <div key={review._id} className="card">
                 <div className="flex justify-between items-start">
                   <StarRating rating={review.rating} readonly />
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    review.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                    review.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {REVIEW_STATUS_LABELS[review.status] || review.status}
-                  </span>
                 </div>
                 <p className="mt-2 text-text-body">{review.comment}</p>
                 <p className="text-xs text-gray-400 mt-2">{new Date(review.createdAt).toLocaleDateString()}</p>
