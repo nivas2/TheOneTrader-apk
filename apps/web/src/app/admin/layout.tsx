@@ -89,12 +89,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Filter sidebar links for sub-admins
   const allowedPages = user.allowedPages || [];
   const visibleLinks = isSubAdmin
-    ? adminLinks.filter((link) => {
-        // Sub-admins always see signals pages
-        if (link.href === '/admin/signals' || link.href === '/admin/signals/history') return true;
-        // Check allowed pages
-        return allowedPages.includes(link.href);
-      })
+    ? adminLinks.filter((link) => allowedPages.includes(link.href))
     : adminLinks;
 
   const sidebarContent = (

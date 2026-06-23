@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 const AVAILABLE_PAGES = [
+  { href: '/admin/signals', label: 'Create Signal' },
+  { href: '/admin/signals/history', label: 'Signal History' },
   { href: '/admin/dashboard', label: 'Dashboard' },
   { href: '/admin/plans', label: 'Plans & Pricing' },
   { href: '/admin/payments', label: 'Payments' },
@@ -196,7 +198,7 @@ export default function SubAdminsPage() {
 
             {/* Allowed Pages */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Allowed Pages (besides Signals)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Allowed Pages</label>
               <div className="flex flex-wrap gap-2">
                 {AVAILABLE_PAGES.map((page) => (
                   <button
