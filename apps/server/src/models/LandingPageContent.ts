@@ -7,6 +7,8 @@ export interface ILandingPageContentDocument extends Document {
     headingLine2: string;
     typewriterPhrases: string[];
     profitLabel: string;
+    profitAmount: string;
+    onlineTraders: number;
     ctaPrimaryText: string;
     ctaPrimaryLink: string;
     ctaSecondaryText: string;
@@ -66,6 +68,7 @@ export interface ILandingPageContentDocument extends Document {
       title: string;
       description: string;
       buttonText: string;
+      buttonLink: string;
     };
   };
   performance: {
@@ -109,6 +112,13 @@ export interface ILandingPageContentDocument extends Document {
     names: string[];
     cities: string[];
   };
+  footer: {
+    brandDescription: string;
+    email: string;
+    disclaimer: string;
+    quickLinks: { label: string; url: string }[];
+    socialLinks: { platform: string; url: string }[];
+  };
   leadCaptureModal: {
     badgeText: string;
     heading: string;
@@ -137,6 +147,8 @@ const LandingPageContentSchema = new Schema<ILandingPageContentDocument>(
         ],
       },
       profitLabel: { type: String, default: 'Total Profit Generated' },
+      profitAmount: { type: String, default: '12,47,605' },
+      onlineTraders: { type: Number, default: 47 },
       ctaPrimaryText: { type: String, default: 'Start Trading Now' },
       ctaPrimaryLink: { type: String, default: '/register' },
       ctaSecondaryText: { type: String, default: 'View Live Signals' },
@@ -310,6 +322,7 @@ const LandingPageContentSchema = new Schema<ILandingPageContentDocument>(
         title: { type: String, default: 'All 5 Segments. One Subscription.' },
         description: { type: String, default: 'Get signals across Intraday, F&O, MTF, Long Term & Short Term — no hidden charges.' },
         buttonText: { type: String, default: 'Get Started Free' },
+        buttonLink: { type: String, default: '/register' },
       },
     },
     performance: {
@@ -373,6 +386,22 @@ const LandingPageContentSchema = new Schema<ILandingPageContentDocument>(
           'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai',
           'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Lucknow',
         ],
+      },
+    },
+    footer: {
+      brandDescription: { type: String, default: 'Expert-curated trading signals for Indian stock markets. Intraday, F&O, MTF, and more.' },
+      email: { type: String, default: 'hari@theonetrade.in' },
+      disclaimer: { type: String, default: 'Trading in financial markets involves substantial risk. Past performance is not indicative of future results. The information provided is for educational purposes only and should not be considered as financial advice. Please consult with a qualified financial advisor before making any investment decisions.' },
+      quickLinks: {
+        type: [{ label: { type: String }, url: { type: String } }],
+        default: [
+          { label: 'Login', url: '/login' },
+          { label: 'Register', url: '/register' },
+        ],
+      },
+      socialLinks: {
+        type: [{ platform: { type: String }, url: { type: String } }],
+        default: [],
       },
     },
     leadCaptureModal: {

@@ -73,6 +73,8 @@ const DEFAULT_CONTENT = {
       'Join 2,500+ profitable Indian traders.',
     ],
     profitLabel: 'Total Profit Generated',
+    profitAmount: '12,47,605',
+    onlineTraders: 47,
     ctaPrimaryText: 'Start Trading Now',
     ctaPrimaryLink: '/register',
     ctaSecondaryText: 'View Live Signals',
@@ -207,6 +209,7 @@ const DEFAULT_CONTENT = {
       title: 'All 5 Segments. One Subscription.',
       description: 'Get signals across Intraday, F&O, MTF, Long Term & Short Term — no hidden charges.',
       buttonText: 'Get Started Free',
+      buttonLink: '/register',
     },
   },
   performance: {
@@ -313,8 +316,15 @@ export default function HomePage() {
   const [heroCardIndex, setHeroCardIndex] = useState(0);
 
   // FOMO
-  const [profitCounter, setProfitCounter] = useState(1247350);
+  const [profitCounter, setProfitCounter] = useState(1247605);
   const [onlineTraders, setOnlineTraders] = useState(47);
+
+  // Sync profit/online from CMS when content loads
+  useEffect(() => {
+    const amt = parseInt(String(content.hero?.profitAmount || '1247605').replace(/,/g, ''), 10) || 1247605;
+    setProfitCounter(amt);
+    setOnlineTraders(content.hero?.onlineTraders || 47);
+  }, [content.hero?.profitAmount, content.hero?.onlineTraders]);
   const [fomoToast, setFomoToast] = useState<{ name: string; city: string; visible: boolean } | null>(null);
 
   // Countdown
@@ -810,7 +820,7 @@ export default function HomePage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-6 md:inline-block md:px-10 md:py-8">
               <h3 className="text-lg md:text-xl font-bold text-text-heading mb-2">{whatWeOffer.allSegmentsCTA.title}</h3>
               <p className="text-sm md:text-base text-text-body mb-4 md:mb-5">{whatWeOffer.allSegmentsCTA.description}</p>
-              <Link href="/register" className="btn-primary text-base md:text-lg px-6 py-2.5 md:px-8 md:py-3">
+              <Link href={whatWeOffer.allSegmentsCTA.buttonLink || '/register'} className="btn-primary text-base md:text-lg px-6 py-2.5 md:px-8 md:py-3">
                 {whatWeOffer.allSegmentsCTA.buttonText}
               </Link>
             </div>

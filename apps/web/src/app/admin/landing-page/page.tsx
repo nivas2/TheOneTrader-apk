@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { SOCIAL_ICONS, PLATFORM_OPTIONS } from '@/components/Footer';
 
 interface SectionProps {
   title: string;
@@ -255,7 +256,10 @@ export default function AdminLandingPage() {
               items={content.hero?.typewriterPhrases || []}
               onChange={(v) => updateField('hero', 'typewriterPhrases', v)}
             />
-            <InputField label="Profit Label" value={content.hero?.profitLabel} onChange={(v) => updateField('hero', 'profitLabel', v)} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Profit Label" value={content.hero?.profitLabel} onChange={(v) => updateField('hero', 'profitLabel', v)} placeholder="e.g. Total Profit Generated" />
+              <InputField label="Profit Amount (in Indian format)" value={content.hero?.profitAmount} onChange={(v) => updateField('hero', 'profitAmount', v)} placeholder="e.g. 12,73,406" />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <InputField label="Primary CTA Text" value={content.hero?.ctaPrimaryText} onChange={(v) => updateField('hero', 'ctaPrimaryText', v)} />
               <InputField label="Primary CTA Link" value={content.hero?.ctaPrimaryLink} onChange={(v) => updateField('hero', 'ctaPrimaryLink', v)} />
@@ -264,7 +268,17 @@ export default function AdminLandingPage() {
               <InputField label="Secondary CTA Text" value={content.hero?.ctaSecondaryText} onChange={(v) => updateField('hero', 'ctaSecondaryText', v)} />
               <InputField label="Secondary CTA Link" value={content.hero?.ctaSecondaryLink} onChange={(v) => updateField('hero', 'ctaSecondaryLink', v)} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Online Traders Count</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={content.hero?.onlineTraders ?? 47}
+                  onChange={(e) => updateField('hero', 'onlineTraders', parseInt(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+                />
+              </div>
               <InputField label="Online Traders Suffix" value={content.hero?.onlineTradersSuffix} onChange={(v) => updateField('hero', 'onlineTradersSuffix', v)} />
               <InputField label="Joined Today Text" value={content.hero?.joinedTodayText} onChange={(v) => updateField('hero', 'joinedTodayText', v)} />
             </div>
@@ -799,7 +813,10 @@ export default function AdminLandingPage() {
             <h4 className="font-semibold text-gray-700 mt-4 border-b pb-2">All Segments CTA</h4>
             <InputField label="CTA Title" value={content.whatWeOffer?.allSegmentsCTA?.title} onChange={(v) => updateNestedField('whatWeOffer', 'allSegmentsCTA', 'title', v)} />
             <TextareaField label="CTA Description" value={content.whatWeOffer?.allSegmentsCTA?.description} onChange={(v) => updateNestedField('whatWeOffer', 'allSegmentsCTA', 'description', v)} />
-            <InputField label="CTA Button Text" value={content.whatWeOffer?.allSegmentsCTA?.buttonText} onChange={(v) => updateNestedField('whatWeOffer', 'allSegmentsCTA', 'buttonText', v)} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="CTA Button Text" value={content.whatWeOffer?.allSegmentsCTA?.buttonText} onChange={(v) => updateNestedField('whatWeOffer', 'allSegmentsCTA', 'buttonText', v)} />
+              <InputField label="CTA Button Link" value={content.whatWeOffer?.allSegmentsCTA?.buttonLink} onChange={(v) => updateNestedField('whatWeOffer', 'allSegmentsCTA', 'buttonLink', v)} placeholder="/register" />
+            </div>
           </div>
         </Section>
 
@@ -974,6 +991,133 @@ export default function AdminLandingPage() {
               items={content.fomo?.cities || []}
               onChange={(v) => updateField('fomo', 'cities', v)}
             />
+          </div>
+        </Section>
+
+        {/* Footer */}
+        <Section
+          title="Footer"
+          isOpen={!!openSections.footer}
+          onToggle={() => toggleSection('footer')}
+          onSave={() => saveSection('footer')}
+          saving={savingSection === 'footer'}
+        >
+          <div className="grid gap-4">
+            <TextareaField label="Brand Description" value={content.footer?.brandDescription} onChange={(v) => updateField('footer', 'brandDescription', v)} placeholder="Short description shown in the footer" rows={2} />
+            <InputField label="Contact Email" value={content.footer?.email} onChange={(v) => updateField('footer', 'email', v)} placeholder="e.g. support@theonetrade.in" />
+            <TextareaField label="Disclaimer" value={content.footer?.disclaimer} onChange={(v) => updateField('footer', 'disclaimer', v)} placeholder="Legal disclaimer text" rows={4} />
+
+            <h4 className="font-semibold text-gray-700 mt-4 border-b pb-2">Quick Links</h4>
+            {(content.footer?.quickLinks || []).map((link: any, i: number) => (
+              <div key={i} className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">Label</label>
+                  <input
+                    type="text"
+                    value={link.label || ''}
+                    onChange={(e) => {
+                      const links = [...(content.footer?.quickLinks || [])];
+                      links[i] = { ...links[i], label: e.target.value };
+                      updateField('footer', 'quickLinks', links);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+                    placeholder="e.g. Login"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">URL</label>
+                  <input
+                    type="text"
+                    value={link.url || ''}
+                    onChange={(e) => {
+                      const links = [...(content.footer?.quickLinks || [])];
+                      links[i] = { ...links[i], url: e.target.value };
+                      updateField('footer', 'quickLinks', links);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+                    placeholder="e.g. /login"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    const links = (content.footer?.quickLinks || []).filter((_: any, idx: number) => idx !== i);
+                    updateField('footer', 'quickLinks', links);
+                  }}
+                  className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => {
+                const links = [...(content.footer?.quickLinks || []), { label: '', url: '' }];
+                updateField('footer', 'quickLinks', links);
+              }}
+              className="text-sm text-brand-emerald hover:underline"
+            >
+              + Add Quick Link
+            </button>
+
+            <h4 className="font-semibold text-gray-700 mt-4 border-b pb-2">Social Media Links</h4>
+            {(content.footer?.socialLinks || []).map((link: any, i: number) => (
+              <div key={i} className="flex gap-3 items-end">
+                <div className="w-10 h-10 flex items-center justify-center text-gray-500 flex-shrink-0">
+                  {link.platform && SOCIAL_ICONS[link.platform] ? SOCIAL_ICONS[link.platform] : (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" /></svg>
+                  )}
+                </div>
+                <div className="w-40">
+                  <label className="block text-xs text-gray-500 mb-1">Platform</label>
+                  <select
+                    value={link.platform || ''}
+                    onChange={(e) => {
+                      const links = [...(content.footer?.socialLinks || [])];
+                      links[i] = { ...links[i], platform: e.target.value };
+                      updateField('footer', 'socialLinks', links);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+                  >
+                    <option value="">Select platform</option>
+                    {PLATFORM_OPTIONS.map((p) => (
+                      <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">URL</label>
+                  <input
+                    type="text"
+                    value={link.url || ''}
+                    onChange={(e) => {
+                      const links = [...(content.footer?.socialLinks || [])];
+                      links[i] = { ...links[i], url: e.target.value };
+                      updateField('footer', 'socialLinks', links);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+                    placeholder="e.g. https://instagram.com/theonetrade"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    const links = (content.footer?.socialLinks || []).filter((_: any, idx: number) => idx !== i);
+                    updateField('footer', 'socialLinks', links);
+                  }}
+                  className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => {
+                const links = [...(content.footer?.socialLinks || []), { platform: '', url: '' }];
+                updateField('footer', 'socialLinks', links);
+              }}
+              className="text-sm text-brand-emerald hover:underline"
+            >
+              + Add Social Link
+            </button>
           </div>
         </Section>
       </div>
