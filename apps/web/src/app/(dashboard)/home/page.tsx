@@ -30,7 +30,7 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-6">
-      <LeadCaptureModal delay={5000} sessionKey="dashboardLeadModalSeen" />
+      <LeadCaptureModal sessionKey="dashboardLeadModalSeen" />
 
       {/* Dynamic Subscription Banner */}
       <div className="card">

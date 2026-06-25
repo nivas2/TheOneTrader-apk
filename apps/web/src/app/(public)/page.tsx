@@ -554,7 +554,7 @@ export default function HomePage() {
   return (
     <>
       <MarqueeBanner />
-      <LeadCaptureModal showEveryVisit />
+      <LeadCaptureModal />
 
       {/* ── Hero Section ── */}
       <section className="relative bg-gradient-to-br from-white via-emerald-50/30 to-white overflow-hidden py-10 md:py-16 lg:py-24">

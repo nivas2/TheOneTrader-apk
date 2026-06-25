@@ -51,6 +51,7 @@ router.put('/', authMiddleware, adminGuard, async (req: AuthRequest, res: Respon
       'countdown',
       'finalCTA',
       'fomo',
+      'leadCaptureModal',
     ];
 
     for (const section of allowedSections) {

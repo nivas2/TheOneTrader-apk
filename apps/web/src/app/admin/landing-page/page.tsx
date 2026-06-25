@@ -189,6 +189,53 @@ export default function AdminLandingPage() {
       </div>
 
       <div className="space-y-4">
+        {/* Lead Capture Modal */}
+        <Section
+          title="Lead Capture Modal (Popup)"
+          isOpen={!!openSections.leadCaptureModal}
+          onToggle={() => toggleSection('leadCaptureModal')}
+          onSave={() => saveSection('leadCaptureModal')}
+          saving={savingSection === 'leadCaptureModal'}
+        >
+          <div className="grid gap-4">
+            <p className="text-sm text-gray-500">Configure the lead capture popup that appears on the landing page. All text and timing is editable here.</p>
+            <InputField label="Badge Text" value={content.leadCaptureModal?.badgeText} onChange={(v) => updateField('leadCaptureModal', 'badgeText', v)} placeholder="e.g. Limited Time Offer" />
+            <InputField label="Heading" value={content.leadCaptureModal?.heading} onChange={(v) => updateField('leadCaptureModal', 'heading', v)} placeholder="e.g. Get Premium Trading Signals" />
+            <TextareaField label="Subheading" value={content.leadCaptureModal?.subheading} onChange={(v) => updateField('leadCaptureModal', 'subheading', v)} placeholder="e.g. Enter your details to get started..." rows={2} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Button Text" value={content.leadCaptureModal?.buttonText} onChange={(v) => updateField('leadCaptureModal', 'buttonText', v)} placeholder="e.g. Request a Callback" />
+              <InputField label="Skip Text" value={content.leadCaptureModal?.skipText} onChange={(v) => updateField('leadCaptureModal', 'skipText', v)} placeholder="e.g. Skip for now" />
+            </div>
+            <InputField label="Footer Text (below button)" value={content.leadCaptureModal?.footerText} onChange={(v) => updateField('leadCaptureModal', 'footerText', v)} placeholder="e.g. Our experts will guide you personally" />
+            <InputField label="Success Message (after submit)" value={content.leadCaptureModal?.successMessage} onChange={(v) => updateField('leadCaptureModal', 'successMessage', v)} placeholder="e.g. Thank you for your interest!" />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Popup Delay (seconds)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={content.leadCaptureModal?.delayMs != null ? content.leadCaptureModal.delayMs / 1000 : 3}
+                  onChange={(e) => updateField('leadCaptureModal', 'delayMs', Math.max(0, Number(e.target.value)) * 1000)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+                />
+                <p className="text-xs text-gray-400 mt-1">How many seconds to wait before showing the popup (0 = instant)</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Show Every Visit</label>
+                <select
+                  value={content.leadCaptureModal?.showEveryVisit ? 'true' : 'false'}
+                  onChange={(e) => updateField('leadCaptureModal', 'showEveryVisit', e.target.value === 'true')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+                >
+                  <option value="true">Yes - show on every page visit</option>
+                  <option value="false">No - show once per session</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </Section>
+
         {/* Hero Section */}
         <Section
           title="Hero Section"

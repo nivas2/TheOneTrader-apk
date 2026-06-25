@@ -16,6 +16,7 @@ const adminLinks = [
   { href: '/admin/plans', label: 'Plans & Pricing', icon: '💎' },
   { href: '/admin/payments', label: 'Payments', icon: '💰' },
   { href: '/admin/users', label: 'Users', icon: '👥' },
+  { href: '/admin/leads', label: 'Leads', icon: '📩' },
   { href: '/admin/reviews', label: 'Reviews', icon: '⭐' },
   { href: '/admin/landing-page', label: 'Landing Page', icon: '🎨' },
   { href: '/admin/notifications', label: 'Notifications', icon: '🔔' },

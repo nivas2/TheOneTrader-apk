@@ -109,6 +109,17 @@ export interface ILandingPageContentDocument extends Document {
     names: string[];
     cities: string[];
   };
+  leadCaptureModal: {
+    badgeText: string;
+    heading: string;
+    subheading: string;
+    buttonText: string;
+    footerText: string;
+    successMessage: string;
+    skipText: string;
+    delayMs: number;
+    showEveryVisit: boolean;
+  };
 }
 
 const LandingPageContentSchema = new Schema<ILandingPageContentDocument>(
@@ -363,6 +374,17 @@ const LandingPageContentSchema = new Schema<ILandingPageContentDocument>(
           'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Lucknow',
         ],
       },
+    },
+    leadCaptureModal: {
+      badgeText: { type: String, default: 'Limited Time Offer' },
+      heading: { type: String, default: 'Get Premium Trading Signals' },
+      subheading: { type: String, default: 'Enter your details to get started with expert-curated trading insights.' },
+      buttonText: { type: String, default: 'Request a Callback' },
+      footerText: { type: String, default: 'Our experts will guide you personally' },
+      successMessage: { type: String, default: 'Thank you for your interest!' },
+      skipText: { type: String, default: 'Skip for now' },
+      delayMs: { type: Number, default: 3000 },
+      showEveryVisit: { type: Boolean, default: true },
     },
   },
   { timestamps: true }

@@ -4,22 +4,56 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
-interface LeadCaptureModalProps {
-  delay?: number;
-  sessionKey?: string;
-  showEveryVisit?: boolean;
+interface ModalSettings {
+  badgeText: string;
+  heading: string;
+  subheading: string;
+  buttonText: string;
+  footerText: string;
+  successMessage: string;
+  skipText: string;
+  delayMs: number;
+  showEveryVisit: boolean;
 }
 
-export default function LeadCaptureModal({ delay = 0, sessionKey = 'leadModalSeen', showEveryVisit = false }: LeadCaptureModalProps) {
+const DEFAULT_SETTINGS: ModalSettings = {
+  badgeText: 'Limited Time Offer',
+  heading: 'Get Premium Trading Signals',
+  subheading: 'Enter your details to get started with expert-curated trading insights.',
+  buttonText: 'Request a Callback',
+  footerText: 'Our experts will guide you personally',
+  successMessage: 'Thank you for your interest!',
+  skipText: 'Skip for now',
+  delayMs: 3000,
+  showEveryVisit: true,
+};
+
+interface LeadCaptureModalProps {
+  sessionKey?: string;
+}
+
+export default function LeadCaptureModal({ sessionKey = 'leadModalSeen' }: LeadCaptureModalProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [settings, setSettings] = useState<ModalSettings>(DEFAULT_SETTINGS);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    api.get('/public/landing-content/public')
+      .then((res) => {
+        const modal = res.data?.data?.leadCaptureModal;
+        if (modal) {
+          setSettings((prev) => ({ ...prev, ...modal }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     try {
-      if (showEveryVisit) {
-        if (delay > 0) {
-          const timer = setTimeout(() => setIsOpen(true), delay);
+      if (settings.showEveryVisit) {
+        if (settings.delayMs > 0) {
+          const timer = setTimeout(() => setIsOpen(true), settings.delayMs);
           return () => clearTimeout(timer);
         } else {
           setIsOpen(true);
@@ -28,8 +62,8 @@ export default function LeadCaptureModal({ delay = 0, sessionKey = 'leadModalSee
       }
       const hasSeenModal = sessionStorage.getItem(sessionKey);
       if (!hasSeenModal) {
-        if (delay > 0) {
-          const timer = setTimeout(() => setIsOpen(true), delay);
+        if (settings.delayMs > 0) {
+          const timer = setTimeout(() => setIsOpen(true), settings.delayMs);
           return () => clearTimeout(timer);
         } else {
           setIsOpen(true);
@@ -38,7 +72,7 @@ export default function LeadCaptureModal({ delay = 0, sessionKey = 'leadModalSee
     } catch {
       setIsOpen(true);
     }
-  }, [delay, sessionKey, showEveryVisit]);
+  }, [settings.delayMs, settings.showEveryVisit, sessionKey]);
 
   const handleClose = () => {
     try { sessionStorage.setItem(sessionKey, 'true'); } catch {}
@@ -50,7 +84,7 @@ export default function LeadCaptureModal({ delay = 0, sessionKey = 'leadModalSee
     setIsSubmitting(true);
     try {
       await api.post('/public/leads', formData);
-      toast.success('Thank you for your interest!');
+      toast.success(settings.successMessage);
       handleClose();
     } catch {
       toast.error('Something went wrong. Please try again.');
@@ -66,12 +100,12 @@ export default function LeadCaptureModal({ delay = 0, sessionKey = 'leadModalSee
       <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-xl">
         <div className="flex justify-center mb-4">
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-brand-emerald bg-brand-emerald/10 border border-brand-emerald/20">
-            Limited Time Offer
+            {settings.badgeText}
           </span>
         </div>
 
-        <h2 className="text-2xl font-bold text-text-heading mb-2 text-center">Get Premium Trading Signals</h2>
-        <p className="text-text-body mb-6 text-center">Enter your details to get started with expert-curated trading insights.</p>
+        <h2 className="text-2xl font-bold text-text-heading mb-2 text-center">{settings.heading}</h2>
+        <p className="text-text-body mb-6 text-center">{settings.subheading}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -99,14 +133,14 @@ export default function LeadCaptureModal({ delay = 0, sessionKey = 'leadModalSee
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
           <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
-            {isSubmitting ? 'Submitting...' : 'Get Access'}
+            {isSubmitting ? 'Submitting...' : settings.buttonText}
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-400 mt-4">Join 2,500+ traders already profiting</p>
+        <p className="text-center text-xs text-gray-400 mt-4">{settings.footerText}</p>
 
         <button onClick={handleClose} className="w-full text-center text-sm text-gray-400 mt-3 hover:text-gray-600 transition-colors">
-          Skip for now
+          {settings.skipText}
         </button>
       </div>
     </div>

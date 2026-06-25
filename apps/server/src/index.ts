@@ -29,6 +29,7 @@ import planRoutes from './routes/plans';
 import notificationRoutes from './routes/notifications';
 import landingContentRoutes from './routes/landingContent';
 import subadminRoutes from './routes/subadmins';
+import adminLeadRoutes from './routes/adminLeads';
 
 const app = express();
 const server = http.createServer(app);
@@ -80,6 +81,7 @@ app.use('/api/v1/admin/notifications', notificationRoutes);
 app.use('/api/v1/landing-content', landingContentRoutes);
 app.use('/api/v1/public/landing-content', landingContentRoutes);
 app.use('/api/v1/admin/sub-admins', subadminRoutes);
+app.use('/api/v1/admin/leads', adminLeadRoutes);
 
 // Health check
 app.get('/api/v1/health', (_req, res) => {
