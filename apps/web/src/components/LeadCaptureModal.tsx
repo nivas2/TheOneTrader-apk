@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface ModalSettings {
   badgeText: string;
@@ -28,14 +29,18 @@ const DEFAULT_SETTINGS: ModalSettings = {
   showEveryVisit: true,
 };
 
+const LEAD_SUBMITTED_KEY = 'leadFormSubmitted';
+
 interface LeadCaptureModalProps {
   sessionKey?: string;
 }
 
 export default function LeadCaptureModal({ sessionKey = 'leadModalSeen' }: LeadCaptureModalProps) {
+  const { user, isLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useState<ModalSettings>(DEFAULT_SETTINGS);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -50,6 +55,16 @@ export default function LeadCaptureModal({ sessionKey = 'leadModalSeen' }: LeadC
   }, []);
 
   useEffect(() => {
+    if (isLoading) return;
+
+    // Don't show modal if user is logged in
+    if (user) return;
+
+    // Don't show modal if user already submitted the lead form
+    try {
+      if (localStorage.getItem(LEAD_SUBMITTED_KEY)) return;
+    } catch {}
+
     try {
       if (settings.showEveryVisit) {
         if (settings.delayMs > 0) {
@@ -72,19 +87,59 @@ export default function LeadCaptureModal({ sessionKey = 'leadModalSeen' }: LeadC
     } catch {
       setIsOpen(true);
     }
-  }, [settings.delayMs, settings.showEveryVisit, sessionKey]);
+  }, [settings.delayMs, settings.showEveryVisit, sessionKey, user, isLoading]);
 
   const handleClose = () => {
     try { sessionStorage.setItem(sessionKey, 'true'); } catch {}
     setIsOpen(false);
   };
 
+  const validateForm = (): boolean => {
+    const newErrors: { name?: string; email?: string; phone?: string } = {};
+
+    // Name: at least 2 characters
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
+      newErrors.name = 'Name is required';
+    } else if (trimmedName.length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    }
+
+    // Email: proper format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const trimmedEmail = formData.email.trim();
+    if (!trimmedEmail) {
+      newErrors.email = 'Email is required';
+    } else if (!emailRegex.test(trimmedEmail)) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    // Phone: exactly 10 digits
+    const digitsOnly = formData.phone.replace(/\D/g, '');
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (digitsOnly.length !== 10) {
+      newErrors.phone = 'Enter a valid 10-digit phone number';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
     setIsSubmitting(true);
     try {
-      await api.post('/public/leads', formData);
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.replace(/\D/g, ''),
+      };
+      await api.post('/public/leads', payload);
       toast.success(settings.successMessage);
+      try { localStorage.setItem(LEAD_SUBMITTED_KEY, 'true'); } catch {}
       handleClose();
     } catch {
       toast.error('Something went wrong. Please try again.');
@@ -108,30 +163,47 @@ export default function LeadCaptureModal({ sessionKey = 'leadModalSeen' }: LeadC
         <p className="text-text-body mb-6 text-center">{settings.subheading}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Your Name"
-            className="input-field"
-            required
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          />
-          <input
-            type="email"
-            placeholder="Email Address"
-            className="input-field"
-            required
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
-          <input
-            type="tel"
-            placeholder="Phone Number"
-            className="input-field"
-            required
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          />
+          <div>
+            <input
+              type="text"
+              placeholder="Your Name"
+              className={`input-field ${errors.name ? 'border-red-500' : ''}`}
+              value={formData.name}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
+              }}
+            />
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+          </div>
+          <div>
+            <input
+              type="email"
+              placeholder="Email Address"
+              className={`input-field ${errors.email ? 'border-red-500' : ''}`}
+              value={formData.email}
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+              }}
+            />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+          </div>
+          <div>
+            <input
+              type="tel"
+              placeholder="Phone Number"
+              className={`input-field ${errors.phone ? 'border-red-500' : ''}`}
+              maxLength={10}
+              value={formData.phone}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setFormData({ ...formData, phone: val });
+                if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined }));
+              }}
+            />
+            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+          </div>
           <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Submitting...' : settings.buttonText}
           </button>

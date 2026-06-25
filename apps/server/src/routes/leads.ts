@@ -9,9 +9,9 @@ import { NOTIFICATION_TYPES } from '@theonetrade/shared-types';
 const router = Router();
 
 const leadSchema = z.object({
-  name: z.string().min(2).max(100),
-  email: z.string().email(),
-  phone: z.string().min(10).max(15),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  email: z.string().email('Enter a valid email address'),
+  phone: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit phone number'),
 });
 
 router.post('/', validate(leadSchema), async (req: Request, res: Response) => {
