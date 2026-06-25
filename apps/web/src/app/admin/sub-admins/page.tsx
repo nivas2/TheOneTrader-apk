@@ -12,6 +12,7 @@ const AVAILABLE_PAGES = [
   { href: '/admin/plans', label: 'Plans & Pricing' },
   { href: '/admin/payments', label: 'Payments' },
   { href: '/admin/users', label: 'Users' },
+  { href: '/admin/leads', label: 'Leads' },
   { href: '/admin/reviews', label: 'Reviews' },
   { href: '/admin/landing-page', label: 'Landing Page' },
   { href: '/admin/notifications', label: 'Notifications' },

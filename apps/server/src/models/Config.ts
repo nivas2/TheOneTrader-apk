@@ -23,6 +23,7 @@ export interface IConfigDocument extends Document {
   apkOriginalName: string;
   apkUploadedAt: Date;
   apkVersion: string;
+  leadStatuses: string[];
 }
 
 const ConfigSchema = new Schema<IConfigDocument>(
@@ -71,6 +72,10 @@ const ConfigSchema = new Schema<IConfigDocument>(
     apkOriginalName: { type: String, default: '' },
     apkUploadedAt: { type: Date },
     apkVersion: { type: String, default: '' },
+    leadStatuses: {
+      type: [String],
+      default: ['New', 'Contacted', 'Callback Needed', 'Interested', 'Not Interested', 'Converted'],
+    },
   },
   { timestamps: true }
 );
