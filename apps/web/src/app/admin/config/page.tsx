@@ -204,6 +204,7 @@ export default function AdminConfigPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const stripDisabled = (items: any[]) => (items || []).filter((i: any) => !i._disabled).map(({ _disabled, ...rest }: any) => rest);
       await api.put('/config', {
         marqueeWarningText: config.marqueeWarningText,
         whatsappActive: config.whatsappActive,
@@ -212,10 +213,17 @@ export default function AdminConfigPage() {
         promotionalBanners: config.promotionalBanners,
         termsAndConditions: config.termsAndConditions,
         whatsappPhone: config.whatsappPhone,
-        signalIntervals: config.signalIntervals,
-        segments: config.segments,
-        categories: config.categories,
+        signalIntervals: stripDisabled(config.signalIntervals),
+        segments: stripDisabled(config.segments),
+        categories: stripDisabled(config.categories),
       });
+      // Update local state to remove disabled items after save
+      setConfig((prev: any) => ({
+        ...prev,
+        signalIntervals: stripDisabled(prev.signalIntervals),
+        segments: stripDisabled(prev.segments),
+        categories: stripDisabled(prev.categories),
+      }));
       toast.success('Configuration saved');
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Save failed');
@@ -240,7 +248,7 @@ export default function AdminConfigPage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 min-w-fit px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === tab.key
                 ? 'bg-white text-text-heading shadow-sm'
                 : 'text-text-body hover:text-text-heading'
@@ -408,12 +416,13 @@ export default function AdminConfigPage() {
             </div>
             <div className="space-y-2">
               {(config.signalIntervals || []).map((item: any, index: number) => (
-                <div key={index} className="flex items-center gap-3">
+                <div key={index} className={`flex items-center gap-3 transition-opacity ${item._disabled ? 'opacity-40' : ''}`}>
                   <input
                     type="text"
                     className="input-field flex-1"
                     placeholder="Key (e.g. YEARLY)"
                     value={item.key}
+                    disabled={item._disabled}
                     onChange={(e) => {
                       const updated = [...config.signalIntervals];
                       updated[index] = { ...updated[index], key: e.target.value.toUpperCase().replace(/\s+/g, '_') };
@@ -425,22 +434,27 @@ export default function AdminConfigPage() {
                     className="input-field flex-1"
                     placeholder="Label (e.g. Yearly)"
                     value={item.label}
+                    disabled={item._disabled}
                     onChange={(e) => {
                       const updated = [...config.signalIntervals];
                       updated[index] = { ...updated[index], label: e.target.value };
                       setConfig({ ...config, signalIntervals: updated });
                     }}
                   />
-                  <button
-                    type="button"
+                  <div
                     onClick={() => {
-                      const updated = config.signalIntervals.filter((_: any, i: number) => i !== index);
+                      const updated = [...config.signalIntervals];
+                      updated[index] = { ...updated[index], _disabled: !item._disabled };
                       setConfig({ ...config, signalIntervals: updated });
                     }}
-                    className="text-signal-red hover:text-red-700 text-lg px-2"
+                    className={`w-10 h-5 rounded-full transition-colors cursor-pointer flex items-center flex-shrink-0 ${
+                      !item._disabled ? 'bg-brand-emerald' : 'bg-gray-300'
+                    }`}
                   >
-                    &times;
-                  </button>
+                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform mx-0.5 ${
+                      !item._disabled ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -467,12 +481,13 @@ export default function AdminConfigPage() {
             </div>
             <div className="space-y-2">
               {(config.segments || []).map((item: any, index: number) => (
-                <div key={index} className="flex items-center gap-3">
+                <div key={index} className={`flex items-center gap-3 transition-opacity ${item._disabled ? 'opacity-40' : ''}`}>
                   <input
                     type="text"
                     className="input-field flex-1"
                     placeholder="Key (e.g. INTRADAY)"
                     value={item.key}
+                    disabled={item._disabled}
                     onChange={(e) => {
                       const updated = [...config.segments];
                       updated[index] = { ...updated[index], key: e.target.value.toUpperCase().replace(/\s+/g, '_') };
@@ -484,22 +499,27 @@ export default function AdminConfigPage() {
                     className="input-field flex-1"
                     placeholder="Label (e.g. Intraday)"
                     value={item.label}
+                    disabled={item._disabled}
                     onChange={(e) => {
                       const updated = [...config.segments];
                       updated[index] = { ...updated[index], label: e.target.value };
                       setConfig({ ...config, segments: updated });
                     }}
                   />
-                  <button
-                    type="button"
+                  <div
                     onClick={() => {
-                      const updated = config.segments.filter((_: any, i: number) => i !== index);
+                      const updated = [...config.segments];
+                      updated[index] = { ...updated[index], _disabled: !item._disabled };
                       setConfig({ ...config, segments: updated });
                     }}
-                    className="text-signal-red hover:text-red-700 text-lg px-2"
+                    className={`w-10 h-5 rounded-full transition-colors cursor-pointer flex items-center flex-shrink-0 ${
+                      !item._disabled ? 'bg-brand-emerald' : 'bg-gray-300'
+                    }`}
                   >
-                    &times;
-                  </button>
+                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform mx-0.5 ${
+                      !item._disabled ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -526,12 +546,13 @@ export default function AdminConfigPage() {
             </div>
             <div className="space-y-2">
               {(config.categories || []).map((item: any, index: number) => (
-                <div key={index} className="flex items-center gap-3">
+                <div key={index} className={`flex items-center gap-3 transition-opacity ${item._disabled ? 'opacity-40' : ''}`}>
                   <input
                     type="text"
                     className="input-field flex-1"
                     placeholder="Key (e.g. EQUITY)"
                     value={item.key}
+                    disabled={item._disabled}
                     onChange={(e) => {
                       const updated = [...config.categories];
                       updated[index] = { ...updated[index], key: e.target.value.toUpperCase().replace(/\s+/g, '_') };
@@ -543,22 +564,27 @@ export default function AdminConfigPage() {
                     className="input-field flex-1"
                     placeholder="Label (e.g. Equity)"
                     value={item.label}
+                    disabled={item._disabled}
                     onChange={(e) => {
                       const updated = [...config.categories];
                       updated[index] = { ...updated[index], label: e.target.value };
                       setConfig({ ...config, categories: updated });
                     }}
                   />
-                  <button
-                    type="button"
+                  <div
                     onClick={() => {
-                      const updated = config.categories.filter((_: any, i: number) => i !== index);
+                      const updated = [...config.categories];
+                      updated[index] = { ...updated[index], _disabled: !item._disabled };
                       setConfig({ ...config, categories: updated });
                     }}
-                    className="text-signal-red hover:text-red-700 text-lg px-2"
+                    className={`w-10 h-5 rounded-full transition-colors cursor-pointer flex items-center flex-shrink-0 ${
+                      !item._disabled ? 'bg-brand-emerald' : 'bg-gray-300'
+                    }`}
                   >
-                    &times;
-                  </button>
+                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform mx-0.5 ${
+                      !item._disabled ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </div>
                 </div>
               ))}
             </div>

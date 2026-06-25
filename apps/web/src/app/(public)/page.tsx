@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
-import { SEGMENT_LABELS, SUBCATEGORY_LABELS } from '@/lib/labels';
 import MarqueeBanner from '@/components/MarqueeBanner';
 import LeadCaptureModal from '@/components/LeadCaptureModal';
 import TestimonialCarousel from '@/components/TestimonialCarousel';
@@ -225,11 +224,6 @@ const DEFAULT_CONTENT = {
       { stepNumber: '03', title: 'Book Profits', description: 'Execute trades based on our signals and watch your portfolio grow consistently.' },
     ],
   },
-  signalPreview: {
-    badgeText: 'Verified Results',
-    heading: 'Top Performing Signals',
-    subheading: 'Our best past signals — curated by experts, verified by results',
-  },
   testimonials: {
     heading: 'What Our Traders Say',
   },
@@ -308,7 +302,6 @@ export default function HomePage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  const [signals, setSignals] = useState<any[]>([]);
   const [performance, setPerformance] = useState<any>(null);
   const [isApp, setIsApp] = useState(false);
   const [content, setContent] = useState(DEFAULT_CONTENT);
@@ -358,7 +351,6 @@ export default function HomePage() {
   // Load data
   useEffect(() => {
     if (!isApp) {
-      api.get('/public/signals/showcase').then((res) => setSignals(res.data.data || [])).catch(() => {});
       api.get('/public/signals/performance').then((res) => setPerformance(res.data.data)).catch(() => {});
       api.get('/public/landing-content/public')
         .then((res) => {
@@ -559,7 +551,7 @@ export default function HomePage() {
 
   const formatINR = (num: number) => num.toLocaleString('en-IN');
 
-  const { hero, socialProof, whatWeOffer, howItWorks, signalPreview, countdown: ctd, finalCTA } = content;
+  const { hero, socialProof, whatWeOffer, howItWorks, countdown: ctd, finalCTA } = content;
 
   return (
     <>
@@ -875,97 +867,6 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── Signal Preview Grid ── */}
-      <section className="py-12 md:py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-8 md:mb-12 scroll-reveal">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-brand-emerald bg-brand-emerald/10 border border-brand-emerald/20 mb-4">
-              {signalPreview.badgeText}
-            </span>
-            <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-3">{signalPreview.heading}</h2>
-            <p className="text-sm md:text-base text-text-body">{signalPreview.subheading}</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {signals.map((signal, i) => {
-              const isBuy = signal.action === 'BUY';
-              const statusStyle = signal.status === 'HIT_TARGET'
-                ? 'bg-green-100 text-green-700'
-                : signal.status === 'HIT_SL'
-                ? 'bg-red-100 text-red-700'
-                : signal.status === 'SAFE_EXIT'
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-gray-100 text-gray-700';
-              const statusLabel = signal.status === 'HIT_TARGET'
-                ? 'Target Hit'
-                : signal.status === 'HIT_SL'
-                ? 'SL Hit'
-                : signal.status === 'SAFE_EXIT'
-                ? 'Safe Exit'
-                : signal.status;
-              // Calculate profit % for HIT_TARGET signals
-              const profitPct = signal.status === 'HIT_TARGET' && signal.entryPriceRange?.min && signal.targetPrice
-                ? (((signal.targetPrice - signal.entryPriceRange.min) / signal.entryPriceRange.min) * 100).toFixed(1)
-                : null;
-              return (
-                <div
-                  key={signal._id}
-                  className={`scroll-reveal scroll-delay-${(i % 4) + 1} card relative ${
-                    isBuy ? 'border-l-4 border-l-signal-green' : 'border-l-4 border-l-signal-red'
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${isBuy ? 'bg-signal-green text-white' : 'bg-signal-red text-white'}`}>
-                        {signal.action}
-                      </span>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        {SEGMENT_LABELS[signal.segment] || signal.segment}
-                      </span>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusStyle}`}>
-                      {statusLabel}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold mb-3">
-                    {signal.instrument}
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-gray-500">Entry</p>
-                      <p className="font-semibold">{signal.entryPriceRange?.min} - {signal.entryPriceRange?.max}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Target</p>
-                      <p className="font-semibold text-signal-green">{signal.targetPrice}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Stop Loss</p>
-                      <p className="font-semibold text-signal-red">{signal.stopLoss}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Category</p>
-                      <p className="font-semibold">{SUBCATEGORY_LABELS[signal.subCategory] || signal.subCategory}</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-xs text-gray-400">
-                      {new Date(signal.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </span>
-                    {profitPct && (
-                      <span className="text-xs font-bold text-signal-green">+{profitPct}%</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {signals.length === 0 && (
-            <p className="text-center text-gray-400 py-8">No signals available yet</p>
-          )}
         </div>
       </section>
 

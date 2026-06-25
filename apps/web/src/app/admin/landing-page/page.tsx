@@ -80,15 +80,32 @@ function TextareaField({ label, value, onChange, placeholder, rows = 3 }: { labe
   );
 }
 
+function ToggleSwitch({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
+  return (
+    <div
+      onClick={onToggle}
+      className={`w-10 h-5 rounded-full transition-colors cursor-pointer flex items-center flex-shrink-0 ${
+        enabled ? 'bg-brand-emerald' : 'bg-gray-300'
+      }`}
+    >
+      <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform mx-0.5 ${
+        enabled ? 'translate-x-5' : 'translate-x-0'
+      }`} />
+    </div>
+  );
+}
+
 function DynamicList({ label, items, onChange }: { label: string; items: string[]; onChange: (items: string[]) => void }) {
+  const [disabledIndices, setDisabledIndices] = useState<Set<number>>(new Set());
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
       {items.map((item, i) => (
-        <div key={i} className="flex gap-2 mb-2">
+        <div key={i} className={`flex gap-2 mb-2 items-center transition-opacity ${disabledIndices.has(i) ? 'opacity-40' : ''}`}>
           <input
             type="text"
             value={item}
+            disabled={disabledIndices.has(i)}
             onChange={(e) => {
               const newItems = [...items];
               newItems[i] = e.target.value;
@@ -96,12 +113,18 @@ function DynamicList({ label, items, onChange }: { label: string; items: string[
             }}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
           />
-          <button
-            onClick={() => onChange(items.filter((_, idx) => idx !== i))}
-            className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm"
-          >
-            Remove
-          </button>
+          <ToggleSwitch
+            enabled={!disabledIndices.has(i)}
+            onToggle={() => {
+              const next = new Set(disabledIndices);
+              if (next.has(i)) next.delete(i); else next.add(i);
+              setDisabledIndices(next);
+              // Remove disabled items from the data
+              if (!next.has(i)) return; // just re-enabled, no removal
+              onChange(items.filter((_, idx) => !next.has(idx)));
+              setDisabledIndices(new Set());
+            }}
+          />
         </div>
       ))}
       <button
@@ -131,11 +154,26 @@ export default function AdminLandingPage() {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const stripDisabled = (data: any): any => {
+    if (Array.isArray(data)) {
+      return data.filter((item: any) => !item?._disabled).map((item: any) => stripDisabled(item));
+    }
+    if (data && typeof data === 'object') {
+      const { _disabled, ...rest } = data;
+      const result: any = {};
+      for (const key of Object.keys(rest)) {
+        result[key] = stripDisabled(rest[key]);
+      }
+      return result;
+    }
+    return data;
+  };
+
   const saveSection = async (sectionKey: string) => {
     setSavingSection(sectionKey);
     try {
       const payload: any = {};
-      payload[sectionKey] = content[sectionKey];
+      payload[sectionKey] = stripDisabled(content[sectionKey]);
       const res = await api.put('/landing-content', payload);
       setContent(res.data.data);
       toast.success(`${sectionKey} saved successfully`);
@@ -296,7 +334,7 @@ export default function AdminLandingPage() {
           <div className="space-y-4">
             <p className="text-sm text-gray-500">These cards rotate in the hero section carousel. You can add trade showcase cards or custom promotional banners.</p>
             {(content.heroCards || []).map((card: any, i: number) => (
-              <div key={i} className="border border-gray-200 rounded-lg p-4 space-y-3">
+              <div key={i} className={`border border-gray-200 rounded-lg p-4 space-y-3 transition-opacity ${card._disabled ? 'opacity-40' : ''}`}>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-sm text-gray-700">Card #{i + 1}</span>
                   <div className="flex items-center gap-3">
@@ -325,15 +363,14 @@ export default function AdminLandingPage() {
                         Move Down
                       </button>
                     )}
-                    <button
-                      onClick={() => {
-                        const cards = content.heroCards.filter((_: any, idx: number) => idx !== i);
+                    <ToggleSwitch
+                      enabled={!card._disabled}
+                      onToggle={() => {
+                        const cards = [...content.heroCards];
+                        cards[i] = { ...cards[i], _disabled: !card._disabled };
                         setContent((prev: any) => ({ ...prev, heroCards: cards }));
                       }}
-                      className="text-sm text-red-500 hover:underline"
-                    >
-                      Remove
-                    </button>
+                    />
                   </div>
                 </div>
 
@@ -672,12 +709,13 @@ export default function AdminLandingPage() {
         >
           <div className="space-y-3">
             {(content.socialProof || []).map((item: any, i: number) => (
-              <div key={i} className="flex gap-3 items-end">
+              <div key={i} className={`flex gap-3 items-center transition-opacity ${item._disabled ? 'opacity-40' : ''}`}>
                 <div className="flex-1">
                   <label className="block text-xs text-gray-500 mb-1">Value</label>
                   <input
                     type="text"
                     value={item.value || ''}
+                    disabled={item._disabled}
                     onChange={(e) => {
                       const arr = [...content.socialProof];
                       arr[i] = { ...arr[i], value: e.target.value };
@@ -691,6 +729,7 @@ export default function AdminLandingPage() {
                   <input
                     type="text"
                     value={item.label || ''}
+                    disabled={item._disabled}
                     onChange={(e) => {
                       const arr = [...content.socialProof];
                       arr[i] = { ...arr[i], label: e.target.value };
@@ -699,15 +738,19 @@ export default function AdminLandingPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
                   />
                 </div>
-                <button
-                  onClick={() => {
-                    const arr = content.socialProof.filter((_: any, idx: number) => idx !== i);
+                <ToggleSwitch
+                  enabled={!item._disabled}
+                  onToggle={() => {
+                    const arr = [...content.socialProof];
+                    if (!item._disabled) {
+                      arr[i] = { ...arr[i], _disabled: true };
+                    } else {
+                      const { _disabled, ...rest } = arr[i];
+                      arr[i] = rest;
+                    }
                     setContent((prev: any) => ({ ...prev, socialProof: arr }));
                   }}
-                  className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm"
-                >
-                  Remove
-                </button>
+                />
               </div>
             ))}
             <button
@@ -738,18 +781,17 @@ export default function AdminLandingPage() {
 
             <h4 className="font-semibold text-gray-700 mt-4 border-b pb-2">Segments</h4>
             {(content.whatWeOffer?.segments || []).map((seg: any, i: number) => (
-              <div key={i} className="border border-gray-200 rounded-lg p-4 space-y-3">
+              <div key={i} className={`border border-gray-200 rounded-lg p-4 space-y-3 transition-opacity ${seg._disabled ? 'opacity-40' : ''}`}>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-sm text-gray-700">Segment #{i + 1}: {seg.title}</span>
-                  <button
-                    onClick={() => {
-                      const segs = content.whatWeOffer.segments.filter((_: any, idx: number) => idx !== i);
+                  <ToggleSwitch
+                    enabled={!seg._disabled}
+                    onToggle={() => {
+                      const segs = [...content.whatWeOffer.segments];
+                      segs[i] = { ...segs[i], _disabled: !seg._disabled };
                       updateField('whatWeOffer', 'segments', segs);
                     }}
-                    className="text-sm text-red-500 hover:underline"
-                  >
-                    Remove
-                  </button>
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <InputField
@@ -847,18 +889,17 @@ export default function AdminLandingPage() {
             <InputField label="Subheading" value={content.howItWorks?.subheading} onChange={(v) => updateField('howItWorks', 'subheading', v)} />
             <h4 className="font-semibold text-gray-700 mt-2 border-b pb-2">Steps</h4>
             {(content.howItWorks?.steps || []).map((step: any, i: number) => (
-              <div key={i} className="border border-gray-200 rounded-lg p-4 space-y-3">
+              <div key={i} className={`border border-gray-200 rounded-lg p-4 space-y-3 transition-opacity ${step._disabled ? 'opacity-40' : ''}`}>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-sm text-gray-700">Step #{i + 1}</span>
-                  <button
-                    onClick={() => {
-                      const steps = content.howItWorks.steps.filter((_: any, idx: number) => idx !== i);
+                  <ToggleSwitch
+                    enabled={!step._disabled}
+                    onToggle={() => {
+                      const steps = [...content.howItWorks.steps];
+                      steps[i] = { ...steps[i], _disabled: !step._disabled };
                       updateField('howItWorks', 'steps', steps);
                     }}
-                    className="text-sm text-red-500 hover:underline"
-                  >
-                    Remove
-                  </button>
+                  />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <InputField
@@ -901,21 +942,6 @@ export default function AdminLandingPage() {
             >
               + Add Step
             </button>
-          </div>
-        </Section>
-
-        {/* Signal Preview */}
-        <Section
-          title="Signal Preview Section"
-          isOpen={!!openSections.signalPreview}
-          onToggle={() => toggleSection('signalPreview')}
-          onSave={() => saveSection('signalPreview')}
-          saving={savingSection === 'signalPreview'}
-        >
-          <div className="grid gap-4">
-            <InputField label="Badge Text" value={content.signalPreview?.badgeText} onChange={(v) => updateField('signalPreview', 'badgeText', v)} />
-            <InputField label="Heading" value={content.signalPreview?.heading} onChange={(v) => updateField('signalPreview', 'heading', v)} />
-            <InputField label="Subheading" value={content.signalPreview?.subheading} onChange={(v) => updateField('signalPreview', 'subheading', v)} />
           </div>
         </Section>
 
@@ -1009,12 +1035,13 @@ export default function AdminLandingPage() {
 
             <h4 className="font-semibold text-gray-700 mt-4 border-b pb-2">Quick Links</h4>
             {(content.footer?.quickLinks || []).map((link: any, i: number) => (
-              <div key={i} className="flex gap-3 items-end">
+              <div key={i} className={`flex gap-3 items-center transition-opacity ${link._disabled ? 'opacity-40' : ''}`}>
                 <div className="flex-1">
                   <label className="block text-xs text-gray-500 mb-1">Label</label>
                   <input
                     type="text"
                     value={link.label || ''}
+                    disabled={link._disabled}
                     onChange={(e) => {
                       const links = [...(content.footer?.quickLinks || [])];
                       links[i] = { ...links[i], label: e.target.value };
@@ -1029,6 +1056,7 @@ export default function AdminLandingPage() {
                   <input
                     type="text"
                     value={link.url || ''}
+                    disabled={link._disabled}
                     onChange={(e) => {
                       const links = [...(content.footer?.quickLinks || [])];
                       links[i] = { ...links[i], url: e.target.value };
@@ -1038,15 +1066,14 @@ export default function AdminLandingPage() {
                     placeholder="e.g. /login"
                   />
                 </div>
-                <button
-                  onClick={() => {
-                    const links = (content.footer?.quickLinks || []).filter((_: any, idx: number) => idx !== i);
+                <ToggleSwitch
+                  enabled={!link._disabled}
+                  onToggle={() => {
+                    const links = [...(content.footer?.quickLinks || [])];
+                    links[i] = { ...links[i], _disabled: !link._disabled };
                     updateField('footer', 'quickLinks', links);
                   }}
-                  className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm"
-                >
-                  Remove
-                </button>
+                />
               </div>
             ))}
             <button
@@ -1061,7 +1088,7 @@ export default function AdminLandingPage() {
 
             <h4 className="font-semibold text-gray-700 mt-4 border-b pb-2">Social Media Links</h4>
             {(content.footer?.socialLinks || []).map((link: any, i: number) => (
-              <div key={i} className="flex gap-3 items-end">
+              <div key={i} className={`flex gap-3 items-center transition-opacity ${link._disabled ? 'opacity-40' : ''}`}>
                 <div className="w-10 h-10 flex items-center justify-center text-gray-500 flex-shrink-0">
                   {link.platform && SOCIAL_ICONS[link.platform] ? SOCIAL_ICONS[link.platform] : (
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" /></svg>
@@ -1071,6 +1098,7 @@ export default function AdminLandingPage() {
                   <label className="block text-xs text-gray-500 mb-1">Platform</label>
                   <select
                     value={link.platform || ''}
+                    disabled={link._disabled}
                     onChange={(e) => {
                       const links = [...(content.footer?.socialLinks || [])];
                       links[i] = { ...links[i], platform: e.target.value };
@@ -1089,6 +1117,7 @@ export default function AdminLandingPage() {
                   <input
                     type="text"
                     value={link.url || ''}
+                    disabled={link._disabled}
                     onChange={(e) => {
                       const links = [...(content.footer?.socialLinks || [])];
                       links[i] = { ...links[i], url: e.target.value };
@@ -1098,15 +1127,14 @@ export default function AdminLandingPage() {
                     placeholder="e.g. https://instagram.com/theonetrade"
                   />
                 </div>
-                <button
-                  onClick={() => {
-                    const links = (content.footer?.socialLinks || []).filter((_: any, idx: number) => idx !== i);
+                <ToggleSwitch
+                  enabled={!link._disabled}
+                  onToggle={() => {
+                    const links = [...(content.footer?.socialLinks || [])];
+                    links[i] = { ...links[i], _disabled: !link._disabled };
                     updateField('footer', 'socialLinks', links);
                   }}
-                  className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm"
-                >
-                  Remove
-                </button>
+                />
               </div>
             ))}
             <button
