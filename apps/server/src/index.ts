@@ -55,14 +55,13 @@ const authLimiter = rateLimit({
 });
 
 // Static file serving for uploads
-app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
+app.use('/uploads', express.static(path.resolve('./uploads')));
 app.use('/downloads', express.static(path.resolve('./uploads/app')));
-app.use('/uploads/payment', express.static(path.resolve('./uploads/payment')));
 
 // Routes
 app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/public/leads', leadRoutes);
-app.use('/api/v1/public/payment-qr', subscriptionRoutes);
+app.use('/api/v1/public', subscriptionRoutes);
 app.use('/api/v1/client/subscriptions', subscriptionRoutes);
 app.use('/api/v1/admin/subscriptions', subscriptionRoutes);
 app.use('/api/v1/signals', signalRoutes);
