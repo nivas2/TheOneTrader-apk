@@ -48,9 +48,9 @@ export default function AdminReviewsPage() {
       ) : (
         reviews.map((review) => (
           <div key={review._id} className="card">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <h3 className="font-bold">{review.userName}</h3>
                   <span className="text-xs text-gray-400">{review.planType}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -66,18 +66,18 @@ export default function AdminReviewsPage() {
                 <p className="text-xs text-gray-400 mt-2">{new Date(review.createdAt).toLocaleString()}</p>
               </div>
 
-              <div className="flex flex-col gap-2 items-end ml-4">
+              <div className="flex sm:flex-col gap-2 sm:items-end flex-shrink-0">
                 {review.status === 'PENDING_REVIEW' && (
                   <>
                     <button
                       onClick={() => handleModerate(review._id, 'APPROVED', true)}
-                      className="text-xs bg-signal-green text-white px-3 py-1.5 rounded hover:opacity-90"
+                      className="text-xs bg-signal-green text-white px-3 py-1.5 rounded hover:opacity-90 min-h-[36px]"
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => handleModerate(review._id, 'REJECTED')}
-                      className="text-xs bg-signal-red text-white px-3 py-1.5 rounded hover:opacity-90"
+                      className="text-xs bg-signal-red text-white px-3 py-1.5 rounded hover:opacity-90 min-h-[36px]"
                     >
                       Reject
                     </button>

@@ -147,14 +147,14 @@ export default function AdminUsersPage() {
 
       {/* Filters */}
       <div className="card mb-6">
-        <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-3">
           {/* Tab Filters */}
           <div className="flex gap-2">
             {['all', 'subscribed', 'unsubscribed'].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filter === f ? 'bg-brand-emerald text-white' : 'bg-gray-100 text-text-body hover:bg-gray-200'
                 }`}
               >
@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
           </div>
 
           {/* Search */}
-          <form onSubmit={handleSearch} className="flex gap-2 flex-1 min-w-[200px]">
+          <form onSubmit={handleSearch} className="flex gap-2">
             <input
               type="text"
               className="input-field flex-1"
@@ -175,40 +175,29 @@ export default function AdminUsersPage() {
             <button type="submit" className="btn-primary text-sm py-2 px-4">Search</button>
           </form>
 
-          {/* Date Range */}
-          <div className="flex gap-2 items-center">
+          {/* Date Range + Export */}
+          <div className="flex flex-wrap gap-2 items-center">
             <input
               type="date"
-              className="input-field text-sm"
+              className="input-field text-sm flex-1 min-w-[130px] sm:flex-none"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
-            <span className="text-gray-400">to</span>
+            <span className="text-gray-400 text-sm">to</span>
             <input
               type="date"
-              className="input-field text-sm"
+              className="input-field text-sm flex-1 min-w-[130px] sm:flex-none"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
-            <button
-              onClick={() => fetchUsers(1)}
-              className="btn-secondary text-sm py-2 px-3"
-            >
-              Apply
-            </button>
+            <button onClick={() => fetchUsers(1)} className="btn-secondary text-sm py-2 px-3">Apply</button>
             {(startDate || endDate) && (
-              <button
-                onClick={() => { setStartDate(''); setEndDate(''); }}
-                className="text-xs text-signal-red hover:underline"
-              >
+              <button onClick={() => { setStartDate(''); setEndDate(''); }} className="text-xs text-signal-red hover:underline">
                 Clear
               </button>
             )}
+            <button onClick={handleExportCSV} className="btn-secondary text-sm py-2 px-3 sm:ml-auto">CSV</button>
           </div>
-
-          <button onClick={handleExportCSV} className="btn-secondary text-sm py-2 px-4 ml-auto">
-            Download CSV
-          </button>
         </div>
       </div>
 
@@ -220,7 +209,122 @@ export default function AdminUsersPage() {
           <div className="text-center py-8 text-gray-400">No users found.</div>
         ) : (
           <>
-            <table className="w-full text-sm">
+            {/* Mobile Card Layout */}
+            <div className="md:hidden space-y-3">
+              {users.map((user) => (
+                <div key={user._id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-medium text-text-heading">{user.name}</p>
+                      <p className="text-xs text-gray-400">{user.email}</p>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        user.isVerified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {user.isVerified ? 'Verified' : 'Unverified'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                    <div>
+                      <span className="text-xs text-gray-400 block">Phone</span>
+                      <a href={`tel:${user.phone}`} className="text-brand-emerald text-sm">{user.phone}</a>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 block">Registered</span>
+                      <span className="text-xs">{formatDate(user.createdAt)}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 block">Subscription</span>
+                      {user.activeSubscription ? (
+                        <span className="text-xs font-medium text-brand-emerald">
+                          {SEGMENT_LABELS[user.activeSubscription.segment] || user.activeSubscription.segment}{' '}
+                          {PLAN_TYPE_LABELS[user.activeSubscription.planType] || user.activeSubscription.planType}
+                        </span>
+                      ) : user.latestSubscription ? (
+                        <span className="text-xs text-gray-500">
+                          {SUBSCRIPTION_STATUS_LABELS[user.latestSubscription.status] || user.latestSubscription.status}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">None</span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 block">Expires</span>
+                      {user.activeSubscription?.expiresAt ? (
+                        <span className={`text-xs font-medium ${daysLeft(user.activeSubscription.expiresAt) <= 7 ? 'text-signal-red' : 'text-gray-600'}`}>
+                          {daysLeft(user.activeSubscription.expiresAt)}d left
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => handleToggleActive(user._id, user.isActive !== false)}
+                      className={`px-2 py-1 rounded text-xs font-medium min-h-[32px] ${
+                        user.isActive !== false
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-red-100 text-red-700 hover:bg-red-200'
+                      }`}
+                    >
+                      {user.isActive !== false ? 'Active' : 'Inactive'}
+                    </button>
+                    <button
+                      onClick={() => setExpandedUser(expandedUser === user._id ? null : user._id)}
+                      className="text-brand-emerald text-xs font-medium hover:underline ml-auto"
+                    >
+                      {expandedUser === user._id ? 'Hide Details' : 'View Details'}
+                    </button>
+                  </div>
+                  {expandedUser === user._id && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <p className="text-gray-400 mb-0.5">User ID</p>
+                          <p className="font-mono text-gray-600 text-[10px] break-all">{user._id}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 mb-0.5">Total Subscriptions</p>
+                          <p className="font-medium">{user.totalSubscriptions}</p>
+                        </div>
+                        {user.activeSubscription && (
+                          <>
+                            <div>
+                              <p className="text-gray-400 mb-0.5">Active Plan</p>
+                              <p className="font-medium">{PLAN_TYPE_LABELS[user.activeSubscription.planType] || user.activeSubscription.planType}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 mb-0.5">Expires On</p>
+                              <p className="font-medium text-signal-red">
+                                {formatDate(user.activeSubscription.expiresAt)}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                        {!user.activeSubscription && user.latestSubscription && (
+                          <>
+                            <div>
+                              <p className="text-gray-400 mb-0.5">Last Subscription</p>
+                              <p className="font-medium">{PLAN_TYPE_LABELS[user.latestSubscription.planType] || user.latestSubscription.planType}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 mb-0.5">Last Status</p>
+                              <p className="font-medium">{SUBSCRIPTION_STATUS_LABELS[user.latestSubscription.status] || user.latestSubscription.status}</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <table className="w-full text-sm hidden md:table">
               <thead>
                 <tr className="border-b text-left text-gray-500">
                   <th className="pb-3 font-medium">Name</th>

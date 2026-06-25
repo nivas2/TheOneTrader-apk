@@ -140,9 +140,9 @@ export default function AdminLeadsPage() {
 
       {/* Filters */}
       <div className="card mb-6">
-        <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-3">
           {/* Search */}
-          <form onSubmit={handleSearch} className="flex gap-2 flex-1 min-w-[200px]">
+          <form onSubmit={handleSearch} className="flex gap-2">
             <input
               type="text"
               className="input-field flex-1"
@@ -153,35 +153,29 @@ export default function AdminLeadsPage() {
             <button type="submit" className="btn-primary text-sm py-2 px-4">Search</button>
           </form>
 
-          {/* Date Range */}
-          <div className="flex gap-2 items-center">
+          {/* Date Range + Export */}
+          <div className="flex flex-wrap gap-2 items-center">
             <input
               type="date"
-              className="input-field text-sm"
+              className="input-field text-sm flex-1 min-w-[130px] sm:flex-none"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
-            <span className="text-gray-400">to</span>
+            <span className="text-gray-400 text-sm">to</span>
             <input
               type="date"
-              className="input-field text-sm"
+              className="input-field text-sm flex-1 min-w-[130px] sm:flex-none"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
             <button onClick={() => fetchLeads(1)} className="btn-secondary text-sm py-2 px-3">Apply</button>
             {(startDate || endDate) && (
-              <button
-                onClick={() => { setStartDate(''); setEndDate(''); }}
-                className="text-xs text-signal-red hover:underline"
-              >
+              <button onClick={() => { setStartDate(''); setEndDate(''); }} className="text-xs text-signal-red hover:underline">
                 Clear
               </button>
             )}
+            <button onClick={handleExportCSV} className="btn-secondary text-sm py-2 px-3 sm:ml-auto">CSV</button>
           </div>
-
-          <button onClick={handleExportCSV} className="btn-secondary text-sm py-2 px-4 ml-auto">
-            Download CSV
-          </button>
         </div>
       </div>
 

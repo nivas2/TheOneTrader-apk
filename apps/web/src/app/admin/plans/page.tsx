@@ -208,8 +208,54 @@ export default function AdminPlansPage() {
         </button>
       </div>
 
-      {/* Plans Table */}
-      <div className="card overflow-x-auto">
+      {/* Plans - Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {filteredPlans.length === 0 ? (
+          <div className="card text-center py-8 text-gray-400">No plans found. Tap &quot;+ Add Plan&quot; to create one.</div>
+        ) : (
+          filteredPlans.map((plan) => (
+            <div key={plan._id} className="card">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="font-medium text-text-heading">{plan.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {segmentLabelMap[plan.segment] || plan.segment} &middot; {planTypeLabelMap[plan.planType] || plan.planType}
+                  </p>
+                </div>
+                <button
+                  onClick={() => toggleActive(plan)}
+                  className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                    plan.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {plan.isActive ? 'Active' : 'Inactive'}
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-sm mb-3">
+                <div>
+                  <span className="text-xs text-gray-400 block">Price</span>
+                  <span className="font-semibold">{plan.currency} {plan.price.toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 block">Duration</span>
+                  <span>{plan.durationDays}d</span>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 block">Signals/Day</span>
+                  <span>{plan.signalsPerDay || 1}</span>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2 border-t border-gray-100">
+                <button onClick={() => handleEdit(plan)} className="text-blue-600 text-xs font-medium hover:underline min-h-[32px]">Edit</button>
+                <button onClick={() => handleDelete(plan._id)} className="text-signal-red text-xs font-medium hover:underline min-h-[32px]">Delete</button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Plans - Desktop Table */}
+      <div className="card overflow-x-auto hidden md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-gray-500">
@@ -243,27 +289,15 @@ export default function AdminPlansPage() {
                     <button
                       onClick={() => toggleActive(plan)}
                       className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        plan.isActive
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-500'
+                        plan.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                       }`}
                     >
                       {plan.isActive ? 'Active' : 'Inactive'}
                     </button>
                   </td>
                   <td className="py-3 text-right space-x-2">
-                    <button
-                      onClick={() => handleEdit(plan)}
-                      className="text-blue-600 hover:underline text-xs"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(plan._id)}
-                      className="text-signal-red hover:underline text-xs"
-                    >
-                      Delete
-                    </button>
+                    <button onClick={() => handleEdit(plan)} className="text-blue-600 hover:underline text-xs">Edit</button>
+                    <button onClick={() => handleDelete(plan._id)} className="text-signal-red hover:underline text-xs">Delete</button>
                   </td>
                 </tr>
               ))

@@ -269,25 +269,25 @@ export default function AdminPaymentsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="text-xl font-bold">Payments</h2>
         <div className="flex gap-2">
-          <button onClick={downloadCSV} disabled={filteredSubscriptions.length === 0} className="btn-secondary text-sm py-2 px-4 disabled:opacity-40">
-            Export CSV
+          <button onClick={downloadCSV} disabled={filteredSubscriptions.length === 0} className="btn-secondary text-sm py-2 px-3 sm:px-4 disabled:opacity-40">
+            CSV
           </button>
-          <button onClick={() => fetchSubscriptions(activeTab)} className="btn-secondary text-sm py-2 px-4">
+          <button onClick={() => fetchSubscriptions(activeTab)} className="btn-secondary text-sm py-2 px-3 sm:px-4">
             Refresh
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-gray-200">
+      <div className="flex gap-1 mb-4 border-b border-gray-200 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab.key
                 ? 'border-brand-emerald text-brand-emerald'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -299,27 +299,27 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* Search + Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+      <div className="space-y-3 mb-4">
         {/* Global search */}
-        <div className="relative flex-1">
+        <div className="relative">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             type="text"
-            placeholder="Search by name, email, phone, plan, UTR, status..."
+            placeholder="Search name, email, phone, plan, UTR..."
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
           />
         </div>
-        {/* Date range */}
-        <div className="flex gap-2 items-center">
+        {/* Date range + filter buttons */}
+        <div className="flex flex-wrap gap-2 items-center">
           <input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+            className="flex-1 min-w-[130px] sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
             title="From date"
           />
           <span className="text-gray-400 text-xs">to</span>
@@ -327,27 +327,26 @@ export default function AdminPaymentsPage() {
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
+            className="flex-1 min-w-[130px] sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-emerald/20 focus:border-brand-emerald"
             title="To date"
           />
-        </div>
-        {/* Toggle column filters */}
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${
-            showFilters ? 'border-brand-emerald text-brand-emerald bg-brand-emerald/5' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-          }`}
-        >
-          <svg className="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          Filters
-        </button>
-        {hasActiveFilters && (
-          <button onClick={clearAllFilters} className="px-3 py-2 text-sm text-red-500 hover:text-red-700 font-medium whitespace-nowrap">
-            Clear All
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-3 py-2 border rounded-lg text-sm font-medium transition-colors hidden md:inline-flex ${
+              showFilters ? 'border-brand-emerald text-brand-emerald bg-brand-emerald/5' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <svg className="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filters
           </button>
-        )}
+          {hasActiveFilters && (
+            <button onClick={clearAllFilters} className="px-3 py-2 text-sm text-red-500 hover:text-red-700 font-medium whitespace-nowrap">
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Results count */}
@@ -366,150 +365,222 @@ export default function AdminPaymentsPage() {
           <p className="text-text-body">No {activeTab === 'ALL' ? '' : activeTab === 'PENDING_APPROVAL' ? 'pending ' : activeTab === 'APPROVED' ? 'approved ' : 'rejected '}payments found.</p>
         </div>
       ) : (
-        <div className="card overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500 bg-gray-50/50">
-                <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('user')}>
-                  User <SortIcon colKey="user" />
-                </th>
-                <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('phone')}>
-                  Phone <SortIcon colKey="phone" />
-                </th>
-                <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('plan')}>
-                  Plan <SortIcon colKey="plan" />
-                </th>
-                <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('amount')}>
-                  Amount <SortIcon colKey="amount" />
-                </th>
-                <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('utrId')}>
-                  UTR / Ref ID <SortIcon colKey="utrId" />
-                </th>
-                <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('date')}>
-                  Date <SortIcon colKey="date" />
-                </th>
-                <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('status')}>
-                  Status <SortIcon colKey="status" />
-                </th>
-                <th className="px-3 py-3 font-medium">Receipt</th>
-                {showActions && <th className="px-3 py-3 font-medium text-right">Actions</th>}
-              </tr>
-              {/* Column filter row */}
-              {showFilters && (
-                <tr className="border-b border-gray-200 bg-gray-50/30">
-                  <th className="px-2 py-2">
-                    <input type="text" placeholder="Name / email" value={filterUser} onChange={(e) => setFilterUser(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
-                  </th>
-                  <th className="px-2 py-2">
-                    <input type="text" placeholder="Phone" value={filterPhone} onChange={(e) => setFilterPhone(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
-                  </th>
-                  <th className="px-2 py-2">
-                    <input type="text" placeholder="Plan / segment" value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
-                  </th>
-                  <th className="px-2 py-2">
-                    <input type="text" placeholder="Amount" value={filterAmount} onChange={(e) => setFilterAmount(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
-                  </th>
-                  <th className="px-2 py-2">
-                    <input type="text" placeholder="UTR / Ref ID" value={filterUtr} onChange={(e) => setFilterUtr(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
-                  </th>
-                  <th className="px-2 py-2">
-                    <span className="text-xs text-gray-400">Use date range above</span>
-                  </th>
-                  <th className="px-2 py-2">
-                    <input type="text" placeholder="Status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
-                  </th>
-                  <th className="px-2 py-2" />
-                  {showActions && <th className="px-2 py-2" />}
-                </tr>
-              )}
-            </thead>
-            <tbody>
-              {filteredSubscriptions.length === 0 ? (
-                <tr>
-                  <td colSpan={showActions ? 9 : 8} className="text-center py-8 text-gray-400">
-                    No records match your filters.
-                  </td>
-                </tr>
-              ) : (
-                filteredSubscriptions.map((sub) => {
-                  const user = sub.userId as any;
-                  const receiptUrl = getReceiptUrl(sub.receiptScreenshotPath);
-                  const isPending = sub.status === 'PENDING_APPROVAL';
-                  return (
-                    <tr key={sub._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50">
-                      <td className="px-3 py-3">
-                        <p className="font-medium">{user?.name || 'Unknown'}</p>
+        <>
+          {/* Mobile Card Layout */}
+          <div className="md:hidden space-y-3">
+            {filteredSubscriptions.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">No records match your filters.</div>
+            ) : (
+              filteredSubscriptions.map((sub) => {
+                const user = sub.userId as any;
+                const receiptUrl = getReceiptUrl(sub.receiptScreenshotPath);
+                const isPending = sub.status === 'PENDING_APPROVAL';
+                return (
+                  <div key={sub._id} className="card">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-text-heading">{user?.name || 'Unknown'}</p>
                         <p className="text-xs text-gray-400">{user?.email}</p>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap">{user?.phone}</td>
-                      <td className="px-3 py-3">
-                        <p className="font-medium">{PLAN_TYPE_LABELS[sub.planType] || sub.planType}</p>
-                        <p className="text-xs text-gray-400">{SEGMENT_LABELS[sub.segment] || sub.segment}</p>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap font-semibold text-brand-emerald">
-                        {sub.amount > 0 ? `INR ${sub.amount.toLocaleString()}` : <span className="text-gray-400 font-normal text-xs">-</span>}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap font-mono text-xs">
-                        {sub.utrId || <span className="text-gray-400">-</span>}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">{formatDate(sub.createdAt)}</td>
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[sub.status] || 'bg-gray-100 text-gray-600'}`}>
-                          {SUBSCRIPTION_STATUS_LABELS[sub.status] || sub.status}
-                        </span>
-                        {sub.status === 'REJECTED' && sub.rejectionReason && (
-                          <p className="text-xs text-red-500 mt-1 max-w-[200px] truncate" title={sub.rejectionReason}>
-                            {sub.rejectionReason}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-3 py-3">
-                        {receiptUrl ? (
-                          <button
-                            onClick={() => setSelectedScreenshot(receiptUrl)}
-                            className="text-brand-emerald hover:underline text-xs font-medium"
-                          >
-                            View
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${STATUS_STYLES[sub.status] || 'bg-gray-100 text-gray-600'}`}>
+                        {SUBSCRIPTION_STATUS_LABELS[sub.status] || sub.status}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                      <div>
+                        <span className="text-xs text-gray-400 block">Phone</span>
+                        <a href={`tel:${user?.phone}`} className="text-brand-emerald">{user?.phone}</a>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-400 block">Amount</span>
+                        <span className="font-semibold text-brand-emerald">{sub.amount > 0 ? `INR ${sub.amount.toLocaleString()}` : '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-400 block">Plan</span>
+                        <span className="font-medium">{PLAN_TYPE_LABELS[sub.planType] || sub.planType}</span>
+                        <span className="text-xs text-gray-400 ml-1">{SEGMENT_LABELS[sub.segment] || sub.segment}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-400 block">Date</span>
+                        <span className="text-xs">{formatDate(sub.createdAt)}</span>
+                      </div>
+                    </div>
+                    {sub.utrId && (
+                      <p className="text-xs text-gray-500 mb-2">
+                        <span className="text-gray-400">UTR:</span> <span className="font-mono">{sub.utrId}</span>
+                      </p>
+                    )}
+                    {sub.status === 'REJECTED' && sub.rejectionReason && (
+                      <p className="text-xs text-red-500 mb-2">{sub.rejectionReason}</p>
+                    )}
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                      {receiptUrl && (
+                        <button onClick={() => setSelectedScreenshot(receiptUrl)} className="text-brand-emerald text-xs font-medium hover:underline">
+                          View Receipt
+                        </button>
+                      )}
+                      {showActions && isPending && (
+                        <div className="flex gap-2 ml-auto">
+                          <button onClick={() => handleApprove(sub._id)} className="bg-signal-green text-white px-3 py-1.5 rounded text-xs font-semibold min-h-[36px]">
+                            Approve
                           </button>
-                        ) : (
-                          <span className="text-gray-400 text-xs">-</span>
-                        )}
-                      </td>
-                      {showActions && (
-                        <td className="px-3 py-3 whitespace-nowrap text-right">
-                          {isPending ? (
-                            <div className="flex gap-2 justify-end">
-                              <button
-                                onClick={() => handleApprove(sub._id)}
-                                className="bg-signal-green text-white px-3 py-1.5 rounded text-xs font-semibold hover:opacity-90 transition-opacity"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => handleReject(sub._id)}
-                                className="bg-signal-red text-white px-3 py-1.5 rounded text-xs font-semibold hover:opacity-90 transition-opacity"
-                              >
-                                Reject
-                              </button>
-                            </div>
+                          <button onClick={() => handleReject(sub._id)} className="bg-signal-red text-white px-3 py-1.5 rounded text-xs font-semibold min-h-[36px]">
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="card overflow-x-auto p-0 hidden md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500 bg-gray-50/50">
+                  <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('user')}>
+                    User <SortIcon colKey="user" />
+                  </th>
+                  <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('phone')}>
+                    Phone <SortIcon colKey="phone" />
+                  </th>
+                  <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('plan')}>
+                    Plan <SortIcon colKey="plan" />
+                  </th>
+                  <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('amount')}>
+                    Amount <SortIcon colKey="amount" />
+                  </th>
+                  <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('utrId')}>
+                    UTR / Ref ID <SortIcon colKey="utrId" />
+                  </th>
+                  <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('date')}>
+                    Date <SortIcon colKey="date" />
+                  </th>
+                  <th className="px-3 py-3 font-medium cursor-pointer select-none hover:text-gray-700" onClick={() => handleSort('status')}>
+                    Status <SortIcon colKey="status" />
+                  </th>
+                  <th className="px-3 py-3 font-medium">Receipt</th>
+                  {showActions && <th className="px-3 py-3 font-medium text-right">Actions</th>}
+                </tr>
+                {showFilters && (
+                  <tr className="border-b border-gray-200 bg-gray-50/30">
+                    <th className="px-2 py-2">
+                      <input type="text" placeholder="Name / email" value={filterUser} onChange={(e) => setFilterUser(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
+                    </th>
+                    <th className="px-2 py-2">
+                      <input type="text" placeholder="Phone" value={filterPhone} onChange={(e) => setFilterPhone(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
+                    </th>
+                    <th className="px-2 py-2">
+                      <input type="text" placeholder="Plan / segment" value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
+                    </th>
+                    <th className="px-2 py-2">
+                      <input type="text" placeholder="Amount" value={filterAmount} onChange={(e) => setFilterAmount(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
+                    </th>
+                    <th className="px-2 py-2">
+                      <input type="text" placeholder="UTR / Ref ID" value={filterUtr} onChange={(e) => setFilterUtr(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
+                    </th>
+                    <th className="px-2 py-2">
+                      <span className="text-xs text-gray-400">Use date range above</span>
+                    </th>
+                    <th className="px-2 py-2">
+                      <input type="text" placeholder="Status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-brand-emerald/30 focus:border-brand-emerald" />
+                    </th>
+                    <th className="px-2 py-2" />
+                    {showActions && <th className="px-2 py-2" />}
+                  </tr>
+                )}
+              </thead>
+              <tbody>
+                {filteredSubscriptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={showActions ? 9 : 8} className="text-center py-8 text-gray-400">
+                      No records match your filters.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredSubscriptions.map((sub) => {
+                    const user = sub.userId as any;
+                    const receiptUrl = getReceiptUrl(sub.receiptScreenshotPath);
+                    const isPending = sub.status === 'PENDING_APPROVAL';
+                    return (
+                      <tr key={sub._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50">
+                        <td className="px-3 py-3">
+                          <p className="font-medium">{user?.name || 'Unknown'}</p>
+                          <p className="text-xs text-gray-400">{user?.email}</p>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">{user?.phone}</td>
+                        <td className="px-3 py-3">
+                          <p className="font-medium">{PLAN_TYPE_LABELS[sub.planType] || sub.planType}</p>
+                          <p className="text-xs text-gray-400">{SEGMENT_LABELS[sub.segment] || sub.segment}</p>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap font-semibold text-brand-emerald">
+                          {sub.amount > 0 ? `INR ${sub.amount.toLocaleString()}` : <span className="text-gray-400 font-normal text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap font-mono text-xs">
+                          {sub.utrId || <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">{formatDate(sub.createdAt)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[sub.status] || 'bg-gray-100 text-gray-600'}`}>
+                            {SUBSCRIPTION_STATUS_LABELS[sub.status] || sub.status}
+                          </span>
+                          {sub.status === 'REJECTED' && sub.rejectionReason && (
+                            <p className="text-xs text-red-500 mt-1 max-w-[200px] truncate" title={sub.rejectionReason}>
+                              {sub.rejectionReason}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          {receiptUrl ? (
+                            <button
+                              onClick={() => setSelectedScreenshot(receiptUrl)}
+                              className="text-brand-emerald hover:underline text-xs font-medium"
+                            >
+                              View
+                            </button>
                           ) : (
                             <span className="text-gray-400 text-xs">-</span>
                           )}
                         </td>
-                      )}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {showActions && (
+                          <td className="px-3 py-3 whitespace-nowrap text-right">
+                            {isPending ? (
+                              <div className="flex gap-2 justify-end">
+                                <button
+                                  onClick={() => handleApprove(sub._id)}
+                                  className="bg-signal-green text-white px-3 py-1.5 rounded text-xs font-semibold hover:opacity-90 transition-opacity"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(sub._id)}
+                                  className="bg-signal-red text-white px-3 py-1.5 rounded text-xs font-semibold hover:opacity-90 transition-opacity"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs">-</span>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Receipt Modal */}
