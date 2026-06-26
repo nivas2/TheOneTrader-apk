@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'https://pos.feastigo.com';
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'https://theonetrade.in';
 
 let socket: Socket | null = null;
 

@@ -12,6 +12,23 @@ interface AuthenticatedSocket extends Socket {
   userName?: string;
 }
 
+async function isSessionValid(redis: any, decoded: any): Promise<boolean> {
+  // New format: session:{sessionId} → userId
+  const storedUserId = await redis.get(`session:${decoded.sessionId}`);
+  if (storedUserId === decoded.userId) return true;
+
+  // Backward compat: old per-platform keys
+  const platform = decoded.platform || 'web';
+  const storedSessionId = await redis.get(`session:${platform}:${decoded.userId}`);
+  if (storedSessionId === decoded.sessionId) return true;
+
+  // Legacy key
+  const legacySessionId = await redis.get(`session:${decoded.userId}`);
+  if (legacySessionId === decoded.sessionId) return true;
+
+  return false;
+}
+
 export function setupSocketHandlers(io: SocketServer): void {
   // Authentication middleware
   io.use(async (socket: AuthenticatedSocket, next) => {
@@ -25,14 +42,8 @@ export function setupSocketHandlers(io: SocketServer): void {
 
       const decoded = jwt.verify(token, env.JWT_SECRET) as any;
       const redis = getRedisClient();
-      const platform = decoded.platform || 'web';
-      // Check platform-specific session first, fall back to legacy key
-      let storedSessionId = await redis.get(`session:${platform}:${decoded.userId}`);
-      if (!storedSessionId) {
-        storedSessionId = await redis.get(`session:${decoded.userId}`);
-      }
 
-      if (!storedSessionId || storedSessionId !== decoded.sessionId) {
+      if (!(await isSessionValid(redis, decoded))) {
         // Proceed as unauthenticated rather than rejecting
         return next();
       }

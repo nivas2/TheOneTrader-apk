@@ -154,16 +154,7 @@ router.post('/device-token', authMiddleware, validate(deviceTokenSchema), async 
 
 router.post('/logout', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    // Extract platform from JWT to clean the correct session key
-    const token = req.headers.authorization?.split(' ')[1];
-    let platform: string | undefined;
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, env.JWT_SECRET) as any;
-        platform = decoded.platform;
-      } catch {}
-    }
-    await authService.logoutUser(req.userId!, platform);
+    await authService.logoutUser(req.userId!, undefined, req.sessionId);
     res.json({ success: true, message: 'Logged out successfully' });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });

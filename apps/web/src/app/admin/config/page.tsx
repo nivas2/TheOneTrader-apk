@@ -12,6 +12,7 @@ const TABS = [
   { key: 'intervals', label: 'Signal Intervals' },
   { key: 'segments', label: 'Segments' },
   { key: 'categories', label: 'Categories' },
+  { key: 'videos', label: 'Videos' },
   { key: 'terms', label: 'Terms & Conditions' },
   { key: 'mobileapp', label: 'Mobile App' },
   { key: 'account', label: 'My Account' },
@@ -216,6 +217,7 @@ export default function AdminConfigPage() {
         signalIntervals: stripDisabled(config.signalIntervals),
         segments: stripDisabled(config.segments),
         categories: stripDisabled(config.categories),
+        youtubeVideos: config.youtubeVideos,
       });
       // Update local state to remove disabled items after save
       setConfig((prev: any) => ({
@@ -597,6 +599,86 @@ export default function AdminConfigPage() {
               className="btn-secondary text-sm py-2 px-4"
             >
               + Add Category
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'videos' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold">YouTube Videos</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Add YouTube video links to display on the landing page.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">Section Title</label>
+              <input
+                type="text"
+                className="input-field"
+                value={config.youtubeVideos?.sectionTitle || 'Watch Our Videos'}
+                onChange={(e) => setConfig({ ...config, youtubeVideos: { ...config.youtubeVideos, sectionTitle: e.target.value } })}
+                placeholder="Watch Our Videos"
+              />
+            </div>
+
+            <div className="space-y-3">
+              {(config.youtubeVideos?.videos || []).map((video: any, index: number) => (
+                <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                  <div className="flex-1 space-y-2">
+                    <input
+                      type="text"
+                      className="input-field text-sm"
+                      value={video.title}
+                      onChange={(e) => {
+                        const updated = [...(config.youtubeVideos?.videos || [])];
+                        updated[index] = { ...updated[index], title: e.target.value };
+                        setConfig({ ...config, youtubeVideos: { ...config.youtubeVideos, videos: updated } });
+                      }}
+                      placeholder="Video title"
+                    />
+                    <input
+                      type="url"
+                      className="input-field text-sm"
+                      value={video.url}
+                      onChange={(e) => {
+                        const updated = [...(config.youtubeVideos?.videos || [])];
+                        updated[index] = { ...updated[index], url: e.target.value };
+                        setConfig({ ...config, youtubeVideos: { ...config.youtubeVideos, videos: updated } });
+                      }}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                    />
+                  </div>
+                  {(() => {
+                    const id = (video.url || '').match(/(?:youtu\.be\/|v=|\/embed\/|\/v\/|\/shorts\/)([a-zA-Z0-9_-]{11})/)?.[1];
+                    return id ? (
+                      <img src={`https://img.youtube.com/vi/${id}/mqdefault.jpg`} alt="" className="w-24 h-16 rounded object-cover flex-shrink-0" />
+                    ) : null;
+                  })()}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = (config.youtubeVideos?.videos || []).filter((_: any, i: number) => i !== index);
+                      setConfig({ ...config, youtubeVideos: { ...config.youtubeVideos, videos: updated } });
+                    }}
+                    className="text-signal-red hover:text-red-700 text-sm font-medium flex-shrink-0 mt-2"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const videos = [...(config.youtubeVideos?.videos || []), { title: '', url: '' }];
+                setConfig({ ...config, youtubeVideos: { ...config.youtubeVideos, sectionTitle: config.youtubeVideos?.sectionTitle || 'Watch Our Videos', videos } });
+              }}
+              className="btn-secondary text-sm py-2 px-4"
+            >
+              + Add Video
             </button>
           </div>
         )}

@@ -35,6 +35,7 @@ router.get('/public', async (_req: Request, res: Response) => {
         segments: config.segments,
         categories: config.categories,
         instruments: config.instruments,
+        youtubeVideos: config.youtubeVideos,
       },
     });
   } catch (error: any) {
@@ -70,6 +71,7 @@ router.put('/', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Re
       'segments',
       'categories',
       'instruments',
+      'youtubeVideos',
     ];
 
     for (const field of allowedFields) {

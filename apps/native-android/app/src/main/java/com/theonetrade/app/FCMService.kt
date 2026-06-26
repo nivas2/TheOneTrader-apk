@@ -19,7 +19,7 @@ class FCMService : FirebaseMessagingService() {
         private const val TAG = "TheOneTrade"
         private const val CHANNEL_SIGNALS = "signals"
         private const val CHANNEL_GENERAL = "general"
-        private const val WEB_URL = "https://pos.feastigo.com/theonetrade"
+        private const val WEB_URL = "https://theonetrade.in"
 
         private val ROUTE_MAP = mapOf(
             "SIGNAL_NEW" to "/signals",
@@ -170,7 +170,7 @@ class FCMService : FirebaseMessagingService() {
     private fun sendTokenToServer(token: String, authToken: String) {
         Thread {
             try {
-                val url = java.net.URL("https://pos.feastigo.com/theonetrade/api/v1/auth/device-token")
+                val url = java.net.URL("https://theonetrade.in/api/v1/auth/device-token")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.requestMethod = "POST"
                 conn.setRequestProperty("Content-Type", "application/json")

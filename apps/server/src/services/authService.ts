@@ -12,6 +12,7 @@ import { AppError } from '../middleware/errorHandler';
 
 const SALT_ROUNDS = 12;
 const OTP_EXPIRY_MINUTES = 10;
+const SESSION_TTL = 365 * 24 * 60 * 60; // 365 days in seconds
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -98,13 +99,10 @@ export async function loginUser(email: string, password: string, platform: strin
     { expiresIn: env.JWT_EXPIRES_IN as any }
   );
 
-  // Per-platform session enforcement: web and mobile sessions are independent
-  // Web login only invalidates other web sessions, mobile login only invalidates other mobile sessions
+  // Store session by sessionId — each login gets its own independent session
+  // Multiple devices/platforms can be logged in simultaneously
   const redis = getRedisClient();
-  await redis.set(`session:${platform}:${user._id}`, sessionId, 'EX', 365 * 24 * 60 * 60);
-
-  user.currentSessionId = sessionId;
-  await user.save();
+  await redis.set(`session:${sessionId}`, user._id.toString(), 'EX', SESSION_TTL);
 
   return {
     token,
@@ -200,11 +198,10 @@ export async function changePassword(
   await user.save();
 }
 
-export async function logoutUser(userId: string, platform?: string): Promise<void> {
+export async function logoutUser(userId: string, _platform?: string, sessionId?: string): Promise<void> {
   const redis = getRedisClient();
-  if (platform) {
-    await redis.del(`session:${platform}:${userId}`);
+  // Delete only this specific session — other sessions stay valid
+  if (sessionId) {
+    await redis.del(`session:${sessionId}`);
   }
-  // Also clean legacy key
-  await redis.del(`session:${userId}`);
 }

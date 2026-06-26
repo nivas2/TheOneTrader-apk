@@ -7,7 +7,7 @@ import { User } from '../models/User';
 import { subscriptionGuard, maskSignalData } from '../middleware/subscriptionGuard';
 import { Signal } from '../models/Signal';
 import { Config } from '../models/Config';
-import { broadcastSignal, sendSignalFCM, sendSignalStatusFCM } from '../services/signalService';
+import { broadcastSignal, broadcastSignalUpdate, sendSignalFCM, sendSignalStatusFCM } from '../services/signalService';
 import { relaySignalToDebugger, relaySignalUpdateToDebugger } from '../services/debuggerRelay';
 
 const router = Router();
@@ -38,7 +38,7 @@ router.post('/', authMiddleware, adminGuard, validate(createSignalSchema), async
     // Sub-admin segment restriction
     if (req.userRole === 'SUBADMIN') {
       const user = await User.findById(req.userId);
-      if (user && user.allowedSegments.length > 0 && !user.allowedSegments.includes(req.body.segment)) {
+      if (user && !user.allowedSegments.includes(req.body.segment)) {
         res.status(403).json({ success: false, error: 'You are not allowed to create signals for this segment' });
         return;
       }
@@ -333,10 +333,8 @@ router.put('/:id', authMiddleware, adminGuard, validate(updateStatusSchema), asy
       return;
     }
 
-    // Broadcast status update to matching segment room + admin
-    const io = (await import('../config/socket')).getIO();
-    const { SOCKET_EVENTS, getRoomName } = await import('@theonetrade/shared-types');
-    io.to(getRoomName(signal.segment)).to('admin').emit(SOCKET_EVENTS.SIGNAL_UPDATE, { signal: signal.toObject() });
+    // Broadcast status update with alarm to subscribers, without alarm to admin
+    broadcastSignalUpdate(signal).catch(console.error);
 
     // Send FCM push for signal status update
     sendSignalStatusFCM(signal).catch(console.error);

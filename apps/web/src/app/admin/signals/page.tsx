@@ -55,7 +55,7 @@ export default function CreateSignalPage() {
     ? configSegments.map((s) => s.key)
     : Object.keys(SEGMENT_LABELS);
   // Sub-admins only see their allowed segments
-  const SEGMENTS = (isSubAdmin && userAllowedSegments.length > 0)
+  const SEGMENTS = isSubAdmin
     ? ALL_SEGMENTS.filter((s) => userAllowedSegments.includes(s))
     : ALL_SEGMENTS;
   const segmentLabelMap: Record<string, string> = configSegments.length > 0

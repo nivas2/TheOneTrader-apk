@@ -7,7 +7,7 @@ Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     const data = notification.request.content.data;
     // Suppress signal notifications in foreground — the in-app modal + alarm handles them
-    if (data?.type === 'SIGNAL_NEW') {
+    if (data?.type === 'SIGNAL_NEW' || data?.type === 'SIGNAL_STATUS_UPDATE') {
       return {
         shouldShowAlert: false,
         shouldPlaySound: false,

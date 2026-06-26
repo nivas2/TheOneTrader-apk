@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const { login } = useAuth();
   const router = useRouter();
 
@@ -55,6 +56,7 @@ export default function LoginPage() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setIsLoading(true);
+    setLoginError('');
     try {
       await login(email, password);
       toast.success('Login successful');
@@ -66,7 +68,8 @@ export default function LoginPage() {
         router.push('/signals');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Login failed');
+      const msg = error.response?.data?.error || 'Login failed. Please check your credentials.';
+      setLoginError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +85,12 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-brand-emerald">TheOneTrade</h1>
           <p className="text-text-body mt-2">Sign in to your account</p>
         </div>
+
+        {loginError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">
+            {loginError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>

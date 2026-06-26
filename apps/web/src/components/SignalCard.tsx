@@ -74,9 +74,16 @@ export default function SignalCard({ signal, onAcknowledge, showAcknowledge }: S
       )}
 
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-        <span className="text-xs text-gray-400">
-          {new Date(signal.createdAt).toLocaleString()}
-        </span>
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-400">
+            {new Date(signal.createdAt).toLocaleString()}
+          </span>
+          {signal.updatedAt && signal.updatedAt !== signal.createdAt && !isActive && (
+            <span className="text-[10px] text-gray-400 mt-0.5">
+              Updated: {new Date(signal.updatedAt).toLocaleString()}
+            </span>
+          )}
+        </div>
         {signal.targetIntervals && (
           <div className="flex gap-1">
             {signal.targetIntervals.map((interval: string) => (

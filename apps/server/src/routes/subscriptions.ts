@@ -62,7 +62,9 @@ router.post(
 
       // Look up the plan price server-side instead of trusting client
       const plan = await Plan.findOne({ planType, segment, isActive: true });
-      const resolvedAmount = plan ? plan.price : (amount ? Number(amount) : 0);
+      const resolvedAmount = plan
+        ? (plan.salePrice && plan.salePrice > 0 && plan.salePrice < plan.price ? plan.salePrice : plan.price)
+        : (amount ? Number(amount) : 0);
 
       const subscription = await Subscription.create({
         userId: req.userId,

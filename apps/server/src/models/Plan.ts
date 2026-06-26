@@ -6,6 +6,7 @@ export interface IPlanDocument extends Document {
   segment: string;
   durationDays: number;
   price: number;
+  salePrice?: number;
   currency: string;
   features: string[];
   signalsPerDay: number;
@@ -27,6 +28,7 @@ const PlanSchema = new Schema<IPlanDocument>(
     },
     durationDays: { type: Number, required: true },
     price: { type: Number, required: true },
+    salePrice: { type: Number },
     currency: { type: String, default: 'INR' },
     features: [{ type: String }],
     signalsPerDay: { type: Number, default: 1 },

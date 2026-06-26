@@ -24,6 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [popupSignal, setPopupSignal] = useState<any>(null);
+  const [popupStatusUpdate, setPopupStatusUpdate] = useState<string | undefined>(undefined);
   const { socket } = useSocket();
   const { startAlarm, stopAlarm } = useSignalAlarm();
   const { requestPermission, showNotification } = useBrowserNotification();
@@ -50,6 +51,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!socket) return;
 
     const handleNewSignal = (data: any) => {
+      setPopupStatusUpdate(undefined);
       setPopupSignal(data.signal);
       if (data.alarm) {
         startAlarm(data.duration || 30);
@@ -63,9 +65,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     };
 
+    const STATUS_LABELS: Record<string, string> = {
+      HIT_TARGET: 'Target Hit',
+      HIT_SL: 'Stop Loss Hit',
+      SAFE_EXIT: 'Safe Exit',
+      CANCELLED: 'Cancelled',
+    };
+
+    const handleSignalUpdate = (data: any) => {
+      const s = data.signal;
+      if (s && s.status && s.status !== 'ACTIVE') {
+        setPopupStatusUpdate(s.status);
+        setPopupSignal(s);
+        if (data.alarm) {
+          startAlarm(data.duration || 30);
+        }
+        const statusLabel = STATUS_LABELS[s.status] || s.status;
+        showNotification(
+          `${s.instrument} — ${statusLabel}`,
+          `${s.segment} signal ${s.action} ${s.instrument} is now ${statusLabel}`
+        );
+      }
+    };
+
     socket.on('signal:new', handleNewSignal);
+    socket.on('signal:update', handleSignalUpdate);
     return () => {
       socket.off('signal:new', handleNewSignal);
+      socket.off('signal:update', handleSignalUpdate);
     };
   }, [socket, startAlarm, showNotification]);
 
@@ -85,6 +112,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handlePopupAcknowledge = useCallback(() => {
     stopAlarm();
     setPopupSignal(null);
+    setPopupStatusUpdate(undefined);
     if (socket && popupSignal) {
       socket.emit('acknowledge_signal_view', { signalId: popupSignal._id });
     }
@@ -165,6 +193,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <SignalNotificationPopup
           signal={popupSignal}
           onAcknowledge={handlePopupAcknowledge}
+          statusUpdate={popupStatusUpdate}
         />
       )}
 

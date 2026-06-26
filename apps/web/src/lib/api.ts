@@ -20,12 +20,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor to handle 401
+// Only force logout for actual session/token expiry, not all 401s
+const SESSION_EXPIRED_ERRORS = [
+  'Session expired',
+  'Token expired',
+  'Invalid token',
+];
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const msg: string = error.response?.data?.error || '';
+      const isSessionExpired = SESSION_EXPIRED_ERRORS.some((e) => msg.includes(e));
+      // Only force logout if token was sent and session is genuinely expired
+      const hadToken = !!localStorage.getItem('token');
+      if (isSessionExpired && hadToken) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';

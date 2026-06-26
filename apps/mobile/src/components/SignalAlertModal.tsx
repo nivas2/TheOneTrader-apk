@@ -9,15 +9,30 @@ import {
   Dimensions,
 } from 'react-native';
 
+const STATUS_LABELS: Record<string, string> = {
+  HIT_TARGET: 'Target Hit',
+  HIT_SL: 'Stop Loss Hit',
+  SAFE_EXIT: 'Safe Exit',
+  CANCELLED: 'Cancelled',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  HIT_TARGET: '#10B981',
+  HIT_SL: '#EF4444',
+  SAFE_EXIT: '#F59E0B',
+  CANCELLED: '#6B7280',
+};
+
 interface SignalAlertModalProps {
   visible: boolean;
   signal: any | null;
   onAcknowledge: () => void;
+  statusUpdate?: string;
 }
 
 const { width } = Dimensions.get('window');
 
-export default function SignalAlertModal({ visible, signal, onAcknowledge }: SignalAlertModalProps) {
+export default function SignalAlertModal({ visible, signal, onAcknowledge, statusUpdate }: SignalAlertModalProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -37,17 +52,27 @@ export default function SignalAlertModal({ visible, signal, onAcknowledge }: Sig
 
   const isBuy = signal.action === 'BUY';
   const actionColor = isBuy ? '#00B090' : '#EB5757';
+  const statusColor = statusUpdate ? (STATUS_COLORS[statusUpdate] || '#00B090') : undefined;
+  const borderColor = statusColor || (isBuy ? '#00B090' : '#EB5757');
 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
       <View style={styles.overlay}>
-        <Animated.View style={[styles.pulseRing, { opacity: pulseAnim }]} />
+        <Animated.View style={[styles.pulseRing, { opacity: pulseAnim, borderColor }]} />
 
-        <View style={styles.card}>
+        <View style={[styles.card, { borderColor }]}>
           <View style={styles.alertHeader}>
             <Text style={styles.alertIcon}>&#x1F514;</Text>
-            <Text style={styles.alertTitle}>New Signal Alert</Text>
+            <Text style={styles.alertTitle}>{statusUpdate ? 'Signal Update' : 'New Signal Alert'}</Text>
           </View>
+
+          {statusUpdate && (
+            <View style={[styles.statusBanner, { backgroundColor: statusColor + '20' }]}>
+              <Text style={[styles.statusBannerText, { color: statusColor }]}>
+                {STATUS_LABELS[statusUpdate] || statusUpdate}
+              </Text>
+            </View>
+          )}
 
           <View style={[styles.actionBadge, { backgroundColor: actionColor }]}>
             <Text style={styles.actionText}>{signal.action}</Text>
@@ -91,8 +116,8 @@ export default function SignalAlertModal({ visible, signal, onAcknowledge }: Sig
 
           {signal.note ? <Text style={styles.note}>{signal.note}</Text> : null}
 
-          <TouchableOpacity style={styles.ackButton} onPress={onAcknowledge} activeOpacity={0.8}>
-            <Text style={styles.ackButtonText}>Acknowledge Signal</Text>
+          <TouchableOpacity style={[styles.ackButton, statusColor ? { backgroundColor: statusColor } : {}]} onPress={onAcknowledge} activeOpacity={0.8}>
+            <Text style={styles.ackButtonText}>Acknowledge</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -137,6 +162,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#F9FAFB',
+  },
+  statusBanner: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  statusBannerText: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   actionBadge: {
     alignSelf: 'center',

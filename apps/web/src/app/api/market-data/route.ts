@@ -4,11 +4,12 @@ const SYMBOLS = [
   { symbol: '^NSEI', name: 'NIFTY 50' },
   { symbol: '^BSESN', name: 'SENSEX' },
   { symbol: '^NSEBANK', name: 'BANKNIFTY' },
-  { symbol: '^CNXMID', name: 'NIFTY MIDCAP' },
-  { symbol: '^CNXIT', name: 'NIFTY IT' },
-  { symbol: '^CNXPHARMA', name: 'NIFTY PHARMA' },
-  { symbol: '^CNXAUTO', name: 'NIFTY AUTO' },
+  { symbol: 'NIFTY_MIDCAP_100.NS', name: 'NIFTY MIDCAP 100' },
+  { symbol: '^NSMIDCP', name: 'NIFTY NEXT 50' },
   { symbol: '^CNXFIN', name: 'FINNIFTY' },
+  { symbol: '^CNX100', name: 'NIFTY 100' },
+  { symbol: '^CRSLDX', name: 'NIFTY 500' },
+  { symbol: 'NIFTY_SMLCAP_100.NS', name: 'NIFTY SMALLCAP 100' },
 ];
 
 interface MarketIndex {

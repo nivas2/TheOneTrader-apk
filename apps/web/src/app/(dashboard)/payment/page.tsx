@@ -17,10 +17,19 @@ interface Plan {
   segment: string;
   durationDays: number;
   price: number;
+  salePrice?: number;
   currency: string;
   features: string[];
   signalsPerDay: number;
 }
+
+const getEffectivePrice = (plan: Plan) =>
+  plan.salePrice && plan.salePrice > 0 && plan.salePrice < plan.price ? plan.salePrice : plan.price;
+
+const getDiscount = (plan: Plan) =>
+  plan.salePrice && plan.salePrice > 0 && plan.salePrice < plan.price
+    ? Math.round(((plan.price - plan.salePrice) / plan.price) * 100)
+    : 0;
 
 interface Subscription {
   _id: string;
@@ -149,7 +158,7 @@ export default function PaymentPage() {
       formData.append('receipt', file);
       formData.append('planType', selectedPlan.planType);
       formData.append('segment', selectedPlan.segment);
-      formData.append('amount', String(selectedPlan.price));
+      formData.append('amount', String(getEffectivePrice(selectedPlan)));
       formData.append('utrId', utrId.trim());
 
       await api.post('/client/subscriptions/upload-receipt', formData, {
@@ -323,9 +332,21 @@ export default function PaymentPage() {
                     <p className="text-sm text-gray-500 mb-3">
                       {PLAN_TYPE_LABELS[plan.planType] || plan.planType} &middot; {plan.durationDays} days
                     </p>
-                    <p className="text-2xl font-bold text-brand-emerald mb-3">
-                      {plan.currency} {plan.price.toLocaleString()}
-                    </p>
+                    <div className="mb-3">
+                      {getDiscount(plan) > 0 && (
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-600 mb-1">
+                          {getDiscount(plan)}% OFF
+                        </span>
+                      )}
+                      <p className="text-2xl font-bold text-brand-emerald">
+                        {plan.currency} {getEffectivePrice(plan).toLocaleString()}
+                      </p>
+                      {getDiscount(plan) > 0 && (
+                        <p className="text-sm text-gray-400 line-through">
+                          {plan.currency} {plan.price.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
                     {plan.features.length > 0 && (
                       <ul className="text-xs text-gray-500 space-y-1">
                         {plan.features.map((f, i) => (
@@ -355,7 +376,7 @@ export default function PaymentPage() {
               onClick={() => setStep('upload')}
               className="btn-primary w-full mt-4"
             >
-              Continue to Payment - {selectedPlan.currency} {selectedPlan.price.toLocaleString()}
+              Continue to Payment - {selectedPlan.currency} {getEffectivePrice(selectedPlan).toLocaleString()}
             </button>
           )}
         </div>
@@ -372,9 +393,16 @@ export default function PaymentPage() {
                   {PLAN_TYPE_LABELS[selectedPlan?.planType || ''] || selectedPlan?.planType} &middot; {SEGMENT_LABELS[selectedPlan?.segment || '']} &middot; {selectedPlan?.signalsPerDay || 1} signal{(selectedPlan?.signalsPerDay || 1) > 1 ? 's' : ''}/day
                 </p>
               </div>
-              <p className="text-xl font-bold text-brand-emerald">
-                {selectedPlan?.currency} {selectedPlan?.price.toLocaleString()}
-              </p>
+              <div className="text-right">
+                {selectedPlan && getDiscount(selectedPlan) > 0 && (
+                  <p className="text-sm text-gray-400 line-through">
+                    {selectedPlan?.currency} {selectedPlan?.price.toLocaleString()}
+                  </p>
+                )}
+                <p className="text-xl font-bold text-brand-emerald">
+                  {selectedPlan?.currency} {selectedPlan ? getEffectivePrice(selectedPlan).toLocaleString() : ''}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -394,7 +422,7 @@ export default function PaymentPage() {
               </p>
             )}
             <p className="text-sm font-semibold text-brand-emerald mt-3">
-              Pay exactly {selectedPlan?.currency} {selectedPlan?.price.toLocaleString()}
+              Pay exactly {selectedPlan?.currency} {selectedPlan ? getEffectivePrice(selectedPlan).toLocaleString() : ''}
             </p>
             <p className="text-xs text-gray-400 mt-1">
               After payment, enter UTR/Reference ID and upload screenshot below

@@ -13,6 +13,7 @@ interface Plan {
   segment: string;
   durationDays: number;
   price: number;
+  salePrice?: number;
   currency: string;
   features: string[];
   signalsPerDay: number;
@@ -34,6 +35,7 @@ const emptyForm = {
   segment: 'INTRADAY',
   durationDays: '30' as string,
   price: 0,
+  salePrice: '' as string | number,
   currency: 'INR',
   features: '',
   signalsPerDay: '1' as string,
@@ -91,12 +93,18 @@ export default function AdminPlansPage() {
       toast.error('Please fill name and a valid price');
       return;
     }
+    const salePriceNum = form.salePrice !== '' ? Number(form.salePrice) : null;
+    if (salePriceNum !== null && (salePriceNum <= 0 || salePriceNum >= form.price)) {
+      toast.error('Sale price must be greater than 0 and less than MRP');
+      return;
+    }
     setIsSaving(true);
     try {
       const payload = {
         ...form,
         durationDays: parseInt(String(form.durationDays)) || 0,
         signalsPerDay: parseInt(String(form.signalsPerDay)) || 1,
+        salePrice: salePriceNum,
         features: form.features
           .split('\n')
           .map((f) => f.trim())
@@ -128,6 +136,7 @@ export default function AdminPlansPage() {
       segment: plan.segment,
       durationDays: String(plan.durationDays),
       price: plan.price,
+      salePrice: plan.salePrice ?? '',
       currency: plan.currency,
       features: plan.features.join('\n'),
       signalsPerDay: String(plan.signalsPerDay || 1),
@@ -234,7 +243,15 @@ export default function AdminPlansPage() {
               <div className="grid grid-cols-3 gap-2 text-sm mb-3">
                 <div>
                   <span className="text-xs text-gray-400 block">Price</span>
-                  <span className="font-semibold">{plan.currency} {plan.price.toLocaleString()}</span>
+                  {plan.salePrice && plan.salePrice > 0 && plan.salePrice < plan.price ? (
+                    <span>
+                      <span className="font-semibold">{plan.currency} {plan.salePrice.toLocaleString()}</span>
+                      <span className="text-xs text-gray-400 line-through ml-1">{plan.price.toLocaleString()}</span>
+                      <span className="text-xs text-red-600 font-medium ml-1">{Math.round(((plan.price - plan.salePrice) / plan.price) * 100)}% off</span>
+                    </span>
+                  ) : (
+                    <span className="font-semibold">{plan.currency} {plan.price.toLocaleString()}</span>
+                  )}
                 </div>
                 <div>
                   <span className="text-xs text-gray-400 block">Duration</span>
@@ -284,7 +301,17 @@ export default function AdminPlansPage() {
                   <td className="py-3">{planTypeLabelMap[plan.planType] || plan.planType}</td>
                   <td className="py-3">{plan.signalsPerDay || 1}</td>
                   <td className="py-3">{plan.durationDays} days</td>
-                  <td className="py-3 font-semibold">{plan.currency} {plan.price.toLocaleString()}</td>
+                  <td className="py-3">
+                    {plan.salePrice && plan.salePrice > 0 && plan.salePrice < plan.price ? (
+                      <span>
+                        <span className="font-semibold">{plan.currency} {plan.salePrice.toLocaleString()}</span>
+                        <span className="text-xs text-gray-400 line-through ml-1">{plan.price.toLocaleString()}</span>
+                        <span className="text-xs text-red-600 font-medium ml-1">{Math.round(((plan.price - plan.salePrice) / plan.price) * 100)}% off</span>
+                      </span>
+                    ) : (
+                      <span className="font-semibold">{plan.currency} {plan.price.toLocaleString()}</span>
+                    )}
+                  </td>
                   <td className="py-3">
                     <button
                       onClick={() => toggleActive(plan)}
@@ -361,10 +388,19 @@ export default function AdminPlansPage() {
                   <input type="number" className="input-field" value={form.durationDays} onChange={(e) => setForm({ ...form, durationDays: e.target.value })} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price</label>
+                  <label className="block text-sm font-medium mb-1">MRP</label>
                   <input type="number" className="input-field" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Sale Price</label>
+                  <input type="number" className="input-field" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} placeholder="Optional" />
+                  {form.salePrice !== '' && Number(form.salePrice) > 0 && Number(form.salePrice) < form.price && (
+                    <p className="text-xs text-green-600 mt-1 font-medium">
+                      {Math.round(((form.price - Number(form.salePrice)) / form.price) * 100)}% OFF
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Currency</label>

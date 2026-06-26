@@ -25,6 +25,24 @@ export async function broadcastSignal(signal: ISignalDocument): Promise<void> {
   });
 }
 
+export async function broadcastSignalUpdate(signal: ISignalDocument): Promise<void> {
+  const io = getIO();
+
+  // Broadcast to the matching segment room with alarm
+  io.to(getRoomName(signal.segment)).emit(SOCKET_EVENTS.SIGNAL_UPDATE, {
+    signal: signal.toObject(),
+    alarm: true,
+    duration: 30,
+  });
+
+  // Also broadcast to admin room (without alarm — admin initiated the action)
+  io.to('admin').emit(SOCKET_EVENTS.SIGNAL_UPDATE, {
+    signal: signal.toObject(),
+    alarm: false,
+    duration: 0,
+  });
+}
+
 export async function sendSignalFCM(signal: ISignalDocument): Promise<void> {
   try {
     // Send only to users subscribed to the signal's segment
@@ -104,6 +122,8 @@ export async function sendSignalStatusFCM(signal: ISignalDocument): Promise<void
         signalId: signal._id.toString(),
         segment: signal.segment,
         status: signal.status,
+        action: signal.action,
+        instrument: signal.instrument,
         channelId: 'signals',
       }
     );

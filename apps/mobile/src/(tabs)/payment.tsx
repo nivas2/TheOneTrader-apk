@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Act
 import * as ImagePicker from 'expo-image-picker';
 import api from '../services/api';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://pos.feastigo.com/theonetrade/api/v1';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://theonetrade.in/api/v1';
 const SUPPORT_EMAIL = 'hari@theonetrade.in';
 
 const segments = [
@@ -32,10 +32,19 @@ interface Plan {
   segment: string;
   durationDays: number;
   price: number;
+  salePrice?: number;
   currency: string;
   features: string[];
   isActive: boolean;
 }
+
+const getEffectivePrice = (plan: Plan) =>
+  plan.salePrice && plan.salePrice > 0 && plan.salePrice < plan.price ? plan.salePrice : plan.price;
+
+const getDiscount = (plan: Plan) =>
+  plan.salePrice && plan.salePrice > 0 && plan.salePrice < plan.price
+    ? Math.round(((plan.price - plan.salePrice) / plan.price) * 100)
+    : 0;
 
 export default function PaymentScreen() {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -99,7 +108,7 @@ export default function PaymentScreen() {
       } as any);
       formData.append('planType', selectedPlan.planType);
       formData.append('segment', selectedPlan.segment);
-      formData.append('amount', String(selectedPlan.price));
+      formData.append('amount', String(getEffectivePrice(selectedPlan)));
       if (utrId.trim()) formData.append('utrId', utrId.trim());
 
       await api.post('/client/subscriptions/upload-receipt', formData, {
@@ -195,12 +204,24 @@ export default function PaymentScreen() {
                 style={[styles.planOption, selectedPlan?._id === plan._id && styles.planOptionActive]}
                 onPress={() => setSelectedPlan(plan)}
               >
-                <Text style={[styles.planName, selectedPlan?._id === plan._id && styles.planNameActive]}>
-                  {plan.name}
-                </Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={[styles.planName, selectedPlan?._id === plan._id && styles.planNameActive]}>
+                    {plan.name}
+                  </Text>
+                  {getDiscount(plan) > 0 && (
+                    <View style={{ backgroundColor: '#FEE2E2', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#DC2626' }}>{getDiscount(plan)}% OFF</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.planPrice}>
-                  {plan.currency} {plan.price}
+                  {plan.currency} {getEffectivePrice(plan)}
                 </Text>
+                {getDiscount(plan) > 0 && (
+                  <Text style={{ fontSize: 13, color: '#9CA3AF', textDecorationLine: 'line-through', marginTop: 1 }}>
+                    {plan.currency} {plan.price}
+                  </Text>
+                )}
                 <Text style={styles.planDuration}>{plan.durationDays} days</Text>
                 {plan.features.length > 0 && (
                   <View style={styles.features}>
@@ -240,7 +261,7 @@ export default function PaymentScreen() {
         </View>
         {selectedPlan && (
           <Text style={{ textAlign: 'center', fontSize: 14, fontWeight: '700', color: '#00B090', marginBottom: 12 }}>
-            Pay exactly {selectedPlan.currency} {selectedPlan.price}
+            Pay exactly {selectedPlan.currency} {getEffectivePrice(selectedPlan)}
           </Text>
         )}
 

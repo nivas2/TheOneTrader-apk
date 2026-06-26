@@ -71,12 +71,33 @@ export default function PricingSection() {
               </p>
 
               <div className="mb-6">
-                <span className="text-3xl font-bold text-text-heading">
-                  {plan.currency === 'INR' ? '₹' : '$'}{plan.price.toLocaleString('en-IN')}
-                </span>
-                <span className="text-sm text-gray-400 ml-1">
-                  / {plan.durationDays} days
-                </span>
+                {plan.salePrice && plan.salePrice > 0 && plan.salePrice < plan.price ? (
+                  <>
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-600 mb-2">
+                      {Math.round(((plan.price - plan.salePrice) / plan.price) * 100)}% OFF
+                    </span>
+                    <div>
+                      <span className="text-3xl font-bold text-text-heading">
+                        {plan.currency === 'INR' ? '₹' : '$'}{plan.salePrice.toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-sm text-gray-400 ml-1">
+                        / {plan.durationDays} days
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-400 line-through">
+                      {plan.currency === 'INR' ? '₹' : '$'}{plan.price.toLocaleString('en-IN')}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-3xl font-bold text-text-heading">
+                      {plan.currency === 'INR' ? '₹' : '$'}{plan.price.toLocaleString('en-IN')}
+                    </span>
+                    <span className="text-sm text-gray-400 ml-1">
+                      / {plan.durationDays} days
+                    </span>
+                  </>
+                )}
               </div>
 
               {/* Features */}

@@ -305,6 +305,7 @@ export default function HomePage() {
   const [performance, setPerformance] = useState<any>(null);
   const [isApp, setIsApp] = useState(false);
   const [content, setContent] = useState(DEFAULT_CONTENT);
+  const [youtubeVideos, setYoutubeVideos] = useState<{ sectionTitle: string; videos: { title: string; url: string }[] }>({ sectionTitle: 'Watch Our Videos', videos: [] });
   const [activeSegment, setActiveSegment] = useState<string | null>(null);
   const [heroCardIndex, setHeroCardIndex] = useState(0);
 
@@ -352,6 +353,9 @@ export default function HomePage() {
   useEffect(() => {
     if (!isApp) {
       api.get('/public/signals/performance').then((res) => setPerformance(res.data.data)).catch(() => {});
+      api.get('/public/config/public').then((res) => {
+        if (res.data.data?.youtubeVideos) setYoutubeVideos(res.data.data.youtubeVideos);
+      }).catch(() => {});
       api.get('/public/landing-content/public')
         .then((res) => {
           if (res.data.data) {
@@ -785,11 +789,16 @@ export default function HomePage() {
                     </div>
                     <button
                       onClick={() => setActiveSegment((prev) => prev === seg.id ? null : seg.id)}
-                      className={`mt-3 md:mt-4 text-sm font-medium transition-colors ${
-                        activeSegment === seg.id ? 'text-brand-emerald' : 'text-gray-400 hover:text-brand-emerald'
+                      className={`mt-3 md:mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        activeSegment === seg.id
+                          ? 'bg-brand-emerald text-white'
+                          : 'border border-brand-emerald text-brand-emerald hover:bg-brand-emerald hover:text-white'
                       }`}
                     >
                       {activeSegment === seg.id ? 'Hide Past Signals' : 'View Past Signals'}
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={activeSegment === seg.id ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -872,6 +881,41 @@ export default function HomePage() {
 
       {/* ── Testimonials ── */}
       <TestimonialCarousel heading={content.testimonials.heading} />
+
+      {/* ── YouTube Videos ── */}
+      {youtubeVideos.videos.length > 0 && (
+        <section className="py-12 md:py-20 bg-brand-gray">
+          <div className="max-w-6xl mx-auto px-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12 scroll-reveal">
+              {youtubeVideos.sectionTitle}
+            </h2>
+            <div className={`grid gap-6 ${youtubeVideos.videos.length === 1 ? 'max-w-2xl mx-auto' : youtubeVideos.videos.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+              {youtubeVideos.videos.map((video, i) => {
+                const videoId = video.url.match(/(?:youtu\.be\/|v=|\/embed\/|\/v\/|\/shorts\/)([a-zA-Z0-9_-]{11})/)?.[1];
+                if (!videoId) return null;
+                return (
+                  <div key={i} className="scroll-reveal rounded-xl overflow-hidden shadow-lg bg-white">
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        className="absolute inset-0 w-full h-full"
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        title={video.title || 'Video'}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                    {video.title && (
+                      <div className="p-3">
+                        <p className="text-sm font-medium text-text-heading">{video.title}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Countdown / Urgency ── */}
       <section className="py-12 md:py-20 bg-white">

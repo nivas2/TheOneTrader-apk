@@ -15,6 +15,7 @@ export default function TabsLayout() {
   const { token } = useAuth();
   const router = useRouter();
   const [alertSignal, setAlertSignal] = useState<any>(null);
+  const [alertStatusUpdate, setAlertStatusUpdate] = useState<string | undefined>(undefined);
   const [alertVisible, setAlertVisible] = useState(false);
   const socketSetup = useRef(false);
 
@@ -32,7 +33,19 @@ export default function TabsLayout() {
         socket.on('signal:new', (data: any) => {
           if (!mounted) return;
           if (data.signal && data.alarm) {
+            setAlertStatusUpdate(undefined);
             setAlertSignal(data.signal);
+            setAlertVisible(true);
+            playAlarm().catch(() => {});
+          }
+        });
+
+        socket.on('signal:update', (data: any) => {
+          if (!mounted) return;
+          const s = data.signal;
+          if (s && s.status && s.status !== 'ACTIVE' && data.alarm) {
+            setAlertStatusUpdate(s.status);
+            setAlertSignal(s);
             setAlertVisible(true);
             playAlarm().catch(() => {});
           }
@@ -43,6 +56,7 @@ export default function TabsLayout() {
           stopAlarm().catch(() => {});
           setAlertVisible(false);
           setAlertSignal(null);
+          setAlertStatusUpdate(undefined);
         });
       } catch {
         // Socket connection failed
@@ -67,6 +81,19 @@ export default function TabsLayout() {
           instrument: data.instrument,
           segment: data.segment,
         };
+        setAlertStatusUpdate(undefined);
+        setAlertSignal(partialSignal);
+        setAlertVisible(true);
+        playAlarm().catch(() => {});
+      } else if (data?.type === 'SIGNAL_STATUS_UPDATE' && !alertVisible) {
+        const partialSignal = {
+          _id: data.signalId,
+          instrument: data.instrument,
+          segment: data.segment,
+          status: data.status,
+          action: data.action,
+        };
+        setAlertStatusUpdate(data.status as string);
         setAlertSignal(partialSignal);
         setAlertVisible(true);
         playAlarm().catch(() => {});
@@ -80,7 +107,7 @@ export default function TabsLayout() {
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
-      if (data?.type === 'SIGNAL_NEW') {
+      if (data?.type === 'SIGNAL_NEW' || data?.type === 'SIGNAL_STATUS_UPDATE') {
         router.push('/(tabs)/signals' as any);
       }
     });
@@ -91,6 +118,7 @@ export default function TabsLayout() {
   const handleAcknowledge = useCallback(() => {
     stopAlarm().catch(() => {});
     setAlertVisible(false);
+    setAlertStatusUpdate(undefined);
 
     const signal = alertSignal;
     setAlertSignal(null);
@@ -166,6 +194,7 @@ export default function TabsLayout() {
         visible={alertVisible}
         signal={alertSignal}
         onAcknowledge={handleAcknowledge}
+        statusUpdate={alertStatusUpdate}
       />
     </>
   );

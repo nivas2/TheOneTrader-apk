@@ -14,9 +14,12 @@ const FALLBACK_INDICES: MarketIndex[] = [
   { name: 'NIFTY 50', price: '24,856.30', change: '+1.12%', up: true },
   { name: 'SENSEX', price: '81,523.16', change: '+0.98%', up: true },
   { name: 'BANKNIFTY', price: '53,412.85', change: '+1.34%', up: true },
-  { name: 'NIFTY MIDCAP', price: '62,123.35', change: '+0.52%', up: true },
-  { name: 'NIFTY IT', price: '43,215.60', change: '-0.32%', up: false },
-  { name: 'NIFTY PHARMA', price: '21,890.15', change: '+0.45%', up: true },
+  { name: 'NIFTY MIDCAP 100', price: '62,123.35', change: '+0.52%', up: true },
+  { name: 'NIFTY NEXT 50', price: '73,450.20', change: '+0.68%', up: true },
+  { name: 'FINNIFTY', price: '25,120.45', change: '+0.91%', up: true },
+  { name: 'NIFTY 100', price: '25,340.10', change: '+0.85%', up: true },
+  { name: 'NIFTY 500', price: '23,180.75', change: '+0.72%', up: true },
+  { name: 'NIFTY SMALLCAP 100', price: '18,945.60', change: '-0.15%', up: false },
 ];
 
 export default function MarqueeBanner() {

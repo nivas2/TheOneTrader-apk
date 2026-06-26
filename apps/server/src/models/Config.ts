@@ -24,6 +24,10 @@ export interface IConfigDocument extends Document {
   apkUploadedAt: Date;
   apkVersion: string;
   leadStatuses: string[];
+  youtubeVideos: {
+    sectionTitle: string;
+    videos: { title: string; url: string }[];
+  };
 }
 
 const ConfigSchema = new Schema<IConfigDocument>(
@@ -75,6 +79,13 @@ const ConfigSchema = new Schema<IConfigDocument>(
     leadStatuses: {
       type: [String],
       default: ['New', 'Contacted', 'Callback Needed', 'Interested', 'Not Interested', 'Converted'],
+    },
+    youtubeVideos: {
+      type: {
+        sectionTitle: { type: String, default: 'Watch Our Videos' },
+        videos: [{ title: { type: String }, url: { type: String } }],
+      },
+      default: { sectionTitle: 'Watch Our Videos', videos: [] },
     },
   },
   { timestamps: true }

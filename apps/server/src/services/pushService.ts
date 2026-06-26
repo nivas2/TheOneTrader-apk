@@ -32,7 +32,7 @@ export async function sendPushToTokens(
           priority: 'high',
           notification: {
             channelId: data?.channelId || 'general',
-            sound: 'default',
+            sound: data?.channelId === 'signals' ? 'alarm' : 'default',
           },
         },
       });

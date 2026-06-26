@@ -44,6 +44,7 @@ export default function SubAdminsPage() {
   const [password, setPassword] = useState('');
   const [allowedPages, setAllowedPages] = useState<string[]>([]);
   const [allowedSegments, setAllowedSegments] = useState<string[]>([]);
+  const [fullSegmentAccess, setFullSegmentAccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -70,6 +71,7 @@ export default function SubAdminsPage() {
     setPassword('');
     setAllowedPages([]);
     setAllowedSegments([]);
+    setFullSegmentAccess(false);
     setEditingId(null);
     setShowForm(false);
   };
@@ -81,7 +83,11 @@ export default function SubAdminsPage() {
     setPhone(sa.phone);
     setPassword('');
     setAllowedPages(sa.allowedPages || []);
-    setAllowedSegments(sa.allowedSegments || []);
+    const savedSegments = sa.allowedSegments || [];
+    setAllowedSegments(savedSegments);
+    // Detect full access: all configured segments are present
+    const allKeys = segments.map((s) => s.key);
+    setFullSegmentAccess(allKeys.length > 0 && allKeys.every((k) => savedSegments.includes(k)));
     setShowForm(true);
   };
 
@@ -105,7 +111,8 @@ export default function SubAdminsPage() {
     }
     setIsSaving(true);
     try {
-      const payload: any = { name, email, phone, allowedPages, allowedSegments };
+      const resolvedSegments = fullSegmentAccess ? segments.map((s) => s.key) : allowedSegments;
+      const payload: any = { name, email, phone, allowedPages, allowedSegments: resolvedSegments };
       if (password) payload.password = password;
 
       if (editingId) {
@@ -221,24 +228,41 @@ export default function SubAdminsPage() {
             {/* Allowed Segments */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Allowed Segments (for signal creation)</label>
-              <div className="flex flex-wrap gap-2">
-                {segments.map((seg) => (
-                  <button
-                    key={seg.key}
-                    type="button"
-                    onClick={() => toggleSegment(seg.key)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      allowedSegments.includes(seg.key)
-                        ? 'bg-brand-emerald text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {seg.label}
-                  </button>
-                ))}
-                {segments.length === 0 && <p className="text-sm text-gray-400">No segments configured. Add segments in Settings first.</p>}
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Leave empty to allow all segments</p>
+              <label className="flex items-center gap-2 text-sm mb-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={fullSegmentAccess}
+                  onChange={(e) => {
+                    setFullSegmentAccess(e.target.checked);
+                    if (e.target.checked) {
+                      setAllowedSegments(segments.map((s) => s.key));
+                    } else {
+                      setAllowedSegments([]);
+                    }
+                  }}
+                  className="rounded border-gray-300 text-brand-emerald"
+                />
+                Full Access (all segments)
+              </label>
+              {!fullSegmentAccess && (
+                <div className="flex flex-wrap gap-2">
+                  {segments.map((seg) => (
+                    <button
+                      key={seg.key}
+                      type="button"
+                      onClick={() => toggleSegment(seg.key)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        allowedSegments.includes(seg.key)
+                          ? 'bg-brand-emerald text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {seg.label}
+                    </button>
+                  ))}
+                  {segments.length === 0 && <p className="text-sm text-gray-400">No segments configured. Add segments in Settings first.</p>}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">
@@ -272,14 +296,22 @@ export default function SubAdminsPage() {
                   </div>
                   <p className="text-sm text-gray-500">{sa.email} | {sa.phone}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {(sa.allowedSegments || []).map((s) => (
-                      <span key={s} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
-                        {segments.find((seg) => seg.key === s)?.label || s}
-                      </span>
-                    ))}
-                    {(!sa.allowedSegments || sa.allowedSegments.length === 0) && (
-                      <span className="text-xs text-gray-400">All segments</span>
-                    )}
+                    {(() => {
+                      const saSegs = sa.allowedSegments || [];
+                      const allKeys = segments.map((s) => s.key);
+                      const isFullAccess = allKeys.length > 0 && allKeys.every((k) => saSegs.includes(k));
+                      if (isFullAccess) {
+                        return <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded font-medium">Full Access (all segments)</span>;
+                      }
+                      if (saSegs.length === 0) {
+                        return <span className="text-xs text-gray-400">No segments assigned</span>;
+                      }
+                      return saSegs.map((s) => (
+                        <span key={s} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                          {segments.find((seg) => seg.key === s)?.label || s}
+                        </span>
+                      ));
+                    })()}
                   </div>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">

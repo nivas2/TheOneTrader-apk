@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://pos.feastigo.com/theonetrade/api/v1';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://theonetrade.in/api/v1';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -30,17 +30,28 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Only force logout for actual session/token expiry, not all 401s
+const SESSION_EXPIRED_ERRORS = [
+  'Session expired',
+  'Token expired',
+  'Invalid token',
+];
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      try {
-        await SecureStore.deleteItemAsync('token');
-        await SecureStore.deleteItemAsync('user');
-      } catch {
-        // Ignore
+      const msg: string = error.response?.data?.error || '';
+      const isSessionExpired = SESSION_EXPIRED_ERRORS.some((e) => msg.includes(e));
+      if (isSessionExpired) {
+        try {
+          await SecureStore.deleteItemAsync('token');
+          await SecureStore.deleteItemAsync('user');
+        } catch {
+          // Ignore
+        }
+        onAuthExpired?.();
       }
-      onAuthExpired?.();
     }
     return Promise.reject(error);
   }

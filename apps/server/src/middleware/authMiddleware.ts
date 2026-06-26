@@ -16,6 +16,23 @@ interface JwtPayload {
   platform?: string;
 }
 
+async function isSessionValid(redis: any, decoded: JwtPayload): Promise<boolean> {
+  // New format: session:{sessionId} → userId (each login is independent)
+  const storedUserId = await redis.get(`session:${decoded.sessionId}`);
+  if (storedUserId === decoded.userId) return true;
+
+  // Backward compat: also check old per-platform keys
+  const platform = decoded.platform || 'web';
+  const storedSessionId = await redis.get(`session:${platform}:${decoded.userId}`);
+  if (storedSessionId === decoded.sessionId) return true;
+
+  // Legacy key
+  const legacySessionId = await redis.get(`session:${decoded.userId}`);
+  if (legacySessionId === decoded.sessionId) return true;
+
+  return false;
+}
+
 export async function optionalAuthMiddleware(req: AuthRequest, _res: Response, next: NextFunction): Promise<void> {
   try {
     const authHeader = req.headers.authorization;
@@ -28,14 +45,7 @@ export async function optionalAuthMiddleware(req: AuthRequest, _res: Response, n
     const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 
     const redis = getRedisClient();
-    const platform = decoded.platform || 'web';
-    // Check platform-specific session first, fall back to legacy key
-    let storedSessionId = await redis.get(`session:${platform}:${decoded.userId}`);
-    if (!storedSessionId) {
-      storedSessionId = await redis.get(`session:${decoded.userId}`);
-    }
-
-    if (storedSessionId && storedSessionId === decoded.sessionId) {
+    if (await isSessionValid(redis, decoded)) {
       req.userId = decoded.userId;
       req.userRole = decoded.role;
       req.sessionId = decoded.sessionId;
@@ -59,14 +69,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 
     const redis = getRedisClient();
-    const platform = decoded.platform || 'web';
-    // Check platform-specific session first, fall back to legacy key
-    let storedSessionId = await redis.get(`session:${platform}:${decoded.userId}`);
-    if (!storedSessionId) {
-      storedSessionId = await redis.get(`session:${decoded.userId}`);
-    }
-
-    if (!storedSessionId || storedSessionId !== decoded.sessionId) {
+    if (!(await isSessionValid(redis, decoded))) {
       res.status(401).json({ success: false, error: 'Session expired - logged in elsewhere' });
       return;
     }

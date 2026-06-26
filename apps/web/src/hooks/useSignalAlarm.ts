@@ -4,49 +4,70 @@ import { useRef, useCallback, useEffect } from 'react';
 import { useSocket } from '@/context/SocketContext';
 import { SOCKET_EVENTS } from '@theonetrade/shared-types';
 
+// Generate a WAV beep as a blob URL (300ms tone + 200ms silence, loops for pulsing alarm)
+function createAlarmBlobUrl(): string {
+  const sr = 8000, toneDur = 0.3, silDur = 0.2, freq = 800, vol = 0.3;
+  const total = Math.floor(sr * (toneDur + silDur));
+  const tone = Math.floor(sr * toneDur);
+  const buf = new ArrayBuffer(44 + total * 2);
+  const v = new DataView(buf);
+  const w = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4, 36 + total * 2, true); w(8,'WAVE');
+  w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  w(36,'data'); v.setUint32(40, total * 2, true);
+  for (let i = 0; i < total; i++) {
+    let s = 0;
+    if (i < tone) {
+      const t = i / sr;
+      const env = Math.min(1, t * 50, (toneDur - t) * 50);
+      s = (Math.sin(2 * Math.PI * freq * t) > 0 ? 1 : -1) * vol * env;
+    }
+    v.setInt16(44 + i * 2, Math.round(s * 32767), true);
+  }
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+
 export function useSignalAlarm() {
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const audioReadyRef = useRef(false);
   const { socket } = useSocket();
 
-  // Pre-warm AudioContext on ANY user interaction (not just first)
+  // Create audio element and unlock on user interaction
   useEffect(() => {
-    const initAudio = () => {
-      try {
-        if (!audioContextRef.current) {
-          audioContextRef.current = new AudioContext();
-        }
-        if (audioContextRef.current.state === 'suspended') {
-          audioContextRef.current.resume().then(() => {
-            audioReadyRef.current = true;
-          });
-        } else {
-          audioReadyRef.current = true;
-        }
-      } catch {}
+    if (typeof window === 'undefined') return;
+
+    try {
+      const audio = new Audio(createAlarmBlobUrl());
+      audio.loop = true;
+      audio.volume = 1.0;
+      audioRef.current = audio;
+    } catch {}
+
+    const unlock = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
     };
 
-    // Listen for multiple interactions (not once) to ensure AudioContext stays alive
-    document.addEventListener('click', initAudio);
-    document.addEventListener('touchstart', initAudio);
-    document.addEventListener('keydown', initAudio);
-
-    // Also try to initialize immediately (will work if user already interacted)
-    initAudio();
+    document.addEventListener('click', unlock);
+    document.addEventListener('touchstart', unlock);
+    document.addEventListener('keydown', unlock);
 
     return () => {
-      document.removeEventListener('click', initAudio);
-      document.removeEventListener('touchstart', initAudio);
-      document.removeEventListener('keydown', initAudio);
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+      document.removeEventListener('keydown', unlock);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
   }, []);
 
-  const startAlarm = useCallback(async (durationSeconds: number = 30) => {
-    // Vibrate on mobile (works without user interaction on Android)
+  const startAlarm = useCallback((durationSeconds: number = 30) => {
+    // Vibrate on mobile
     if ('vibrate' in navigator) {
-      // Repeated vibration pattern for the alarm duration
       const pattern: number[] = [];
       for (let i = 0; i < durationSeconds * 2; i++) {
         pattern.push(300, 200);
@@ -54,71 +75,29 @@ export function useSignalAlarm() {
       navigator.vibrate(pattern);
     }
 
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext();
-      }
-
-      const ctx = audioContextRef.current;
-
-      // Await resume so oscillator can actually produce sound
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
-      }
-
-      // If context is still not running, audio won't work — vibration is the fallback
-      if (ctx.state !== 'running') return;
-
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-
-      oscillator.type = 'square';
-      oscillator.frequency.setValueAtTime(800, ctx.currentTime);
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-
-      // Create pulsing alarm effect
-      const pulseInterval = setInterval(() => {
-        if (oscillator && gainNode) {
-          gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        }
-      }, 500);
-
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      oscillator.start();
-
-      oscillatorRef.current = oscillator;
-
-      // Auto-stop after duration
-      timerRef.current = setTimeout(() => {
-        stopAlarm();
-        clearInterval(pulseInterval);
-      }, durationSeconds * 1000);
-
-      // Store pulse interval for cleanup
-      (oscillatorRef.current as any)._pulseInterval = pulseInterval;
-    } catch (error) {
-      console.error('Failed to start alarm:', error);
+    const audio = audioRef.current;
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
     }
+
+    // Auto-stop after duration
+    timerRef.current = setTimeout(() => {
+      stopAlarm();
+    }, durationSeconds * 1000);
   }, []);
 
   const stopAlarm = useCallback(() => {
-    // Stop vibration
     if ('vibrate' in navigator) {
       navigator.vibrate(0);
     }
 
-    if (oscillatorRef.current) {
-      try {
-        const pulseInterval = (oscillatorRef.current as any)._pulseInterval;
-        if (pulseInterval) clearInterval(pulseInterval);
-        oscillatorRef.current.stop();
-      } catch {
-        // Already stopped
-      }
-      oscillatorRef.current = null;
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
     }
+
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
