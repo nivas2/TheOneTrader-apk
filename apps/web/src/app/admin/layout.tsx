@@ -94,12 +94,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     : adminLinks;
 
   const sidebarContent = (
-    <>
-      <div className="p-6 flex items-center justify-between">
+    <div className="flex flex-col h-full">
+      <div className="p-6 flex items-center justify-between flex-shrink-0">
         <Link href="/admin/dashboard" className="text-xl font-bold text-brand-emerald">Admin Panel</Link>
         <button onClick={() => setSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
       </div>
-      <nav className="mt-4">
+      <nav className="mt-4 flex-1 overflow-y-auto">
         {visibleLinks.map((link) => (
           <Link
             key={link.href}
@@ -120,7 +120,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
         ))}
       </nav>
-      <div className="absolute bottom-4 left-0 right-0 px-6">
+      <div className="flex-shrink-0 p-4 px-6">
         <button
           onClick={logout}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-red-400/30 bg-red-500/10 text-red-400 text-sm font-medium hover:bg-red-500 hover:text-white transition-all"
@@ -131,7 +131,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           Logout
         </button>
       </div>
-    </>
+    </div>
   );
 
   return (
