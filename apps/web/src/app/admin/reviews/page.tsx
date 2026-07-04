@@ -5,6 +5,8 @@ import api from '@/lib/api';
 import StarRating from '@/components/StarRating';
 import toast from 'react-hot-toast';
 
+const API_BASE = (() => { try { return new URL(process.env.NEXT_PUBLIC_API_URL || '').origin; } catch { return ''; } })();
+
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +65,15 @@ export default function AdminReviewsPage() {
                 </div>
                 <StarRating rating={review.rating} readonly />
                 <p className="mt-2 text-text-body">{review.comment}</p>
+                {review.images?.length > 0 && (
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {review.images.map((img: string, i: number) => (
+                      <a key={i} href={`${API_BASE}${img}`} target="_blank" rel="noopener noreferrer">
+                        <img src={`${API_BASE}${img}`} alt="Profit screenshot" className="w-20 h-20 object-cover rounded border hover:opacity-80" />
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <p className="text-xs text-gray-400 mt-2">{new Date(review.createdAt).toLocaleString()}</p>
               </div>
 

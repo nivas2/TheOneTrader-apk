@@ -44,10 +44,19 @@ export function useSignalAlarm() {
       audioRef.current = audio;
     } catch {}
 
+    let unlocked = false;
     const unlock = () => {
+      if (unlocked) return;
       const audio = audioRef.current;
       if (!audio) return;
-      audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+      audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        unlocked = true;
+        document.removeEventListener('click', unlock);
+        document.removeEventListener('touchstart', unlock);
+        document.removeEventListener('keydown', unlock);
+      }).catch(() => {});
     };
 
     document.addEventListener('click', unlock);

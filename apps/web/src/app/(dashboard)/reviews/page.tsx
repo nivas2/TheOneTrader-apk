@@ -6,9 +6,12 @@ import api from '@/lib/api';
 import StarRating from '@/components/StarRating';
 import toast from 'react-hot-toast';
 
+const API_BASE = (() => { try { return new URL(process.env.NEXT_PUBLIC_API_URL || '').origin; } catch { return ''; } })();
+
 export default function ReviewsPage() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [images, setImages] = useState<File[]>([]);
   const [myReviews, setMyReviews] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
@@ -32,10 +35,18 @@ export default function ReviewsPage() {
     }
     setIsSubmitting(true);
     try {
-      const res = await api.post('/client/reviews', { rating, comment });
+      const formData = new FormData();
+      formData.append('rating', String(rating));
+      formData.append('comment', comment);
+      images.forEach((file) => formData.append('images', file));
+
+      const res = await api.post('/client/reviews', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setMyReviews([res.data.data, ...myReviews]);
       setRating(0);
       setComment('');
+      setImages([]);
       toast.success('Review submitted! It will appear after admin approval.');
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to submit review');
@@ -82,6 +93,35 @@ export default function ReviewsPage() {
                 placeholder="Share your experience with TheOneTrade signals..."
               />
             </div>
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">Upload Profit Screenshots (optional, max 3)</label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []).slice(0, 3);
+                  setImages(files);
+                }}
+                className="input-field"
+              />
+              {images.length > 0 && (
+                <div className="flex gap-2 mt-2">
+                  {images.map((file, i) => (
+                    <div key={i} className="relative w-16 h-16 rounded overflow-hidden border">
+                      <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="absolute top-0 right-0 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-bl"
+                      >
+                        x
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <button type="submit" className="btn-primary" disabled={isSubmitting}>
               {isSubmitting ? 'Submitting...' : 'Submit Review'}
             </button>
@@ -99,6 +139,13 @@ export default function ReviewsPage() {
                   <StarRating rating={review.rating} readonly />
                 </div>
                 <p className="mt-2 text-text-body">{review.comment}</p>
+                {review.images?.length > 0 && (
+                  <div className="flex gap-2 mt-3">
+                    {review.images.map((img: string, i: number) => (
+                      <img key={i} src={`${API_BASE}${img}`} alt="Profit screenshot" className="w-20 h-20 object-cover rounded border" />
+                    ))}
+                  </div>
+                )}
                 <p className="text-xs text-gray-400 mt-2">{new Date(review.createdAt).toLocaleDateString()}</p>
               </div>
             ))}

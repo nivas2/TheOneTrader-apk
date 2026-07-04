@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
 import StarRating from './StarRating';
 
+const API_BASE = (() => { try { return new URL(process.env.NEXT_PUBLIC_API_URL || '').origin; } catch { return ''; } })();
+
 interface TestimonialCarouselProps {
   dark?: boolean;
   heading?: string;
@@ -92,6 +94,15 @@ export default function TestimonialCarousel({ dark = false, heading = 'What Our 
                 >
                   <StarRating rating={review.rating} readonly />
                   <p className={`mt-4 mb-4 italic ${dark ? 'text-gray-400' : 'text-text-body'}`}>&ldquo;{review.comment}&rdquo;</p>
+                  {review.images?.length > 0 && (
+                    <div className="flex gap-2 justify-center mb-4">
+                      {review.images.map((img: string, i: number) => (
+                        <a key={i} href={`${API_BASE}${img}`} target="_blank" rel="noopener noreferrer">
+                          <img src={`${API_BASE}${img}`} alt="Profit screenshot" className="w-16 h-16 object-cover rounded border hover:opacity-80" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   <p className={`font-semibold ${dark ? 'text-white' : 'text-text-heading'}`}>{review.userName}</p>
                   <p className={`text-sm ${dark ? 'text-gray-500' : 'text-gray-400'}`}>{review.planType} Plan</p>
                 </div>

@@ -6,6 +6,7 @@ export interface IReviewDocument extends Document {
   planType: string;
   rating: number;
   comment: string;
+  images: string[];
   displayOnLandingPage: boolean;
   status: string;
   createdAt: Date;
@@ -19,6 +20,7 @@ const ReviewSchema = new Schema<IReviewDocument>(
     planType: { type: String, required: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
     comment: { type: String, required: true, trim: true },
+    images: [{ type: String }],
     displayOnLandingPage: { type: Boolean, default: false },
     status: {
       type: String,

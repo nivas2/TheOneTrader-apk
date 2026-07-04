@@ -6,6 +6,7 @@ import { adminGuard } from '../middleware/adminGuard';
 import { Review } from '../models/Review';
 import { User } from '../models/User';
 import { Subscription } from '../models/Subscription';
+import { uploadReviewImage } from '../config/multer';
 
 const router = Router();
 
@@ -19,9 +20,21 @@ const moderateSchema = z.object({
   displayOnLandingPage: z.boolean().optional(),
 });
 
-// Client: submit review
-router.post('/', authMiddleware, validate(createReviewSchema), async (req: AuthRequest, res: Response) => {
+// Client: submit review (with optional image uploads)
+router.post('/', authMiddleware, uploadReviewImage.array('images', 3), async (req: AuthRequest, res: Response) => {
   try {
+    const rating = parseInt(req.body.rating);
+    const comment = (req.body.comment || '').trim();
+
+    if (!rating || rating < 1 || rating > 5) {
+      res.status(400).json({ success: false, error: 'Rating must be between 1 and 5' });
+      return;
+    }
+    if (!comment || comment.length < 5 || comment.length > 500) {
+      res.status(400).json({ success: false, error: 'Comment must be between 5 and 500 characters' });
+      return;
+    }
+
     const user = await User.findById(req.userId);
     if (!user) {
       res.status(404).json({ success: false, error: 'User not found' });
@@ -33,12 +46,15 @@ router.post('/', authMiddleware, validate(createReviewSchema), async (req: AuthR
       status: { $in: ['ACTIVE', 'EXPIRED'] },
     }).sort({ createdAt: -1 });
 
+    const images = (req.files as Express.Multer.File[] || []).map((f) => `/uploads/reviews/${f.filename}`);
+
     const review = await Review.create({
       userId: req.userId,
       userName: user.name,
       planType: subscription?.planType || 'N/A',
-      rating: req.body.rating,
-      comment: req.body.comment,
+      rating,
+      comment,
+      images,
     });
 
     res.status(201).json({ success: true, data: review });
