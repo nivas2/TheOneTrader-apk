@@ -12,7 +12,7 @@ const SALT_ROUNDS = 12;
 router.get('/', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: Response) => {
   try {
     const subadmins = await User.find({ role: 'SUBADMIN' })
-      .select('name email phone isActive allowedPages allowedSegments createdAt')
+      .select('name email phone isActive allowedPages allowedSegments canDeleteLeads createdAt')
       .sort({ createdAt: -1 });
     res.json({ success: true, data: subadmins });
   } catch (error: any) {
@@ -23,7 +23,7 @@ router.get('/', authMiddleware, mainAdminGuard, async (_req: AuthRequest, res: R
 // Create sub-admin
 router.post('/', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
-    const { name, email, phone, password, allowedPages, allowedSegments } = req.body;
+    const { name, email, phone, password, allowedPages, allowedSegments, canDeleteLeads } = req.body;
 
     if (!name || !email || !password || !phone) {
       return res.status(400).json({ success: false, error: 'Name, email, phone, and password are required' });
@@ -44,6 +44,7 @@ router.post('/', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: R
       isVerified: true,
       allowedPages: allowedPages || [],
       allowedSegments: allowedSegments || [],
+      canDeleteLeads: canDeleteLeads || false,
     });
 
     res.status(201).json({
@@ -72,7 +73,7 @@ router.put('/:id', authMiddleware, mainAdminGuard, async (req: AuthRequest, res:
       return res.status(404).json({ success: false, error: 'Sub-admin not found' });
     }
 
-    const { name, email, phone, allowedPages, allowedSegments, password } = req.body;
+    const { name, email, phone, allowedPages, allowedSegments, password, canDeleteLeads } = req.body;
 
     if (name) subadmin.name = name;
     if (phone) subadmin.phone = phone;
@@ -85,6 +86,7 @@ router.put('/:id', authMiddleware, mainAdminGuard, async (req: AuthRequest, res:
     }
     if (allowedPages !== undefined) subadmin.allowedPages = allowedPages;
     if (allowedSegments !== undefined) subadmin.allowedSegments = allowedSegments;
+    if (canDeleteLeads !== undefined) subadmin.canDeleteLeads = canDeleteLeads;
     if (password) {
       subadmin.passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     }

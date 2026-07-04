@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
 import path from 'path';
+import fs from 'fs';
 import { validate } from '../middleware/validate';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import { adminGuard } from '../middleware/adminGuard';
@@ -25,7 +26,15 @@ router.get('/payment-qr', async (_req, res: Response) => {
       res.status(404).json({ success: false, error: 'Payment QR not configured' });
       return;
     }
-    res.sendFile(path.resolve(config.paymentQrImagePath));
+    const normalizedPath = config.paymentQrImagePath.replace(/\\/g, '/');
+    const resolvedPath = path.resolve(normalizedPath);
+    if (!fs.existsSync(resolvedPath)) {
+      console.error(`Payment QR file not found at: ${resolvedPath} (stored: ${config.paymentQrImagePath})`);
+      res.status(404).json({ success: false, error: 'Payment QR image file not found' });
+      return;
+    }
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(resolvedPath);
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

@@ -27,6 +27,7 @@ interface SubAdmin {
   isActive: boolean;
   allowedPages: string[];
   allowedSegments: string[];
+  canDeleteLeads: boolean;
   createdAt: string;
 }
 
@@ -45,6 +46,7 @@ export default function SubAdminsPage() {
   const [allowedPages, setAllowedPages] = useState<string[]>([]);
   const [allowedSegments, setAllowedSegments] = useState<string[]>([]);
   const [fullSegmentAccess, setFullSegmentAccess] = useState(false);
+  const [canDeleteLeads, setCanDeleteLeads] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export default function SubAdminsPage() {
     setAllowedPages([]);
     setAllowedSegments([]);
     setFullSegmentAccess(false);
+    setCanDeleteLeads(false);
     setEditingId(null);
     setShowForm(false);
   };
@@ -88,6 +91,7 @@ export default function SubAdminsPage() {
     // Detect full access: all configured segments are present
     const allKeys = segments.map((s) => s.key);
     setFullSegmentAccess(allKeys.length > 0 && allKeys.every((k) => savedSegments.includes(k)));
+    setCanDeleteLeads(sa.canDeleteLeads || false);
     setShowForm(true);
   };
 
@@ -112,7 +116,7 @@ export default function SubAdminsPage() {
     setIsSaving(true);
     try {
       const resolvedSegments = fullSegmentAccess ? segments.map((s) => s.key) : allowedSegments;
-      const payload: any = { name, email, phone, allowedPages, allowedSegments: resolvedSegments };
+      const payload: any = { name, email, phone, allowedPages, allowedSegments: resolvedSegments, canDeleteLeads };
       if (password) payload.password = password;
 
       if (editingId) {
@@ -263,6 +267,20 @@ export default function SubAdminsPage() {
                   {segments.length === 0 && <p className="text-sm text-gray-400">No segments configured. Add segments in Settings first.</p>}
                 </div>
               )}
+            </div>
+
+            {/* Permissions */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={canDeleteLeads}
+                  onChange={(e) => setCanDeleteLeads(e.target.checked)}
+                  className="rounded border-gray-300 text-brand-emerald"
+                />
+                Can Delete Leads
+              </label>
             </div>
 
             <div className="flex gap-3">

@@ -1,5 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IStatusHistoryEntry {
+  status: string;
+  updatedBy?: mongoose.Types.ObjectId;
+  updatedByName: string;
+  updatedAt: Date;
+}
+
 export interface ISignalDocument extends Document {
   segment: string;
   subCategory: string;
@@ -13,6 +20,7 @@ export interface ISignalDocument extends Document {
   note?: string;
   showcaseOnLanding: boolean;
   status: string;
+  statusHistory: IStatusHistoryEntry[];
   createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -49,6 +57,12 @@ const SignalSchema = new Schema<ISignalDocument>(
       enum: ['ACTIVE', 'HIT_TARGET', 'HIT_SL', 'SAFE_EXIT', 'CANCELLED'],
       default: 'ACTIVE',
     },
+    statusHistory: [{
+      status: { type: String },
+      updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      updatedByName: { type: String },
+      updatedAt: { type: Date, default: Date.now },
+    }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

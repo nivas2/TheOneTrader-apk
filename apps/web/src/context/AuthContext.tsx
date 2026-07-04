@@ -14,6 +14,7 @@ interface User {
   createdAt: string;
   allowedPages?: string[];
   allowedSegments?: string[];
+  canDeleteLeads?: boolean;
 }
 
 interface AuthContextType {

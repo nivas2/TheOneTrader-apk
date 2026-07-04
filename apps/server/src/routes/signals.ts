@@ -121,6 +121,7 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response) 
     }
 
     const signals = await Signal.find(filter)
+      .populate('createdBy', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -323,15 +324,22 @@ router.patch('/:id/showcase', authMiddleware, adminGuard, async (req: AuthReques
 // Admin: update signal status
 router.put('/:id', authMiddleware, adminGuard, validate(updateStatusSchema), async (req: AuthRequest, res: Response) => {
   try {
-    const signal = await Signal.findByIdAndUpdate(
-      req.params.id,
-      { status: req.body.status },
-      { new: true }
-    );
+    const signal = await Signal.findById(req.params.id);
     if (!signal) {
       res.status(404).json({ success: false, error: 'Signal not found' });
       return;
     }
+
+    const updater = await User.findById(req.userId).select('name role');
+    signal.status = req.body.status;
+    signal.statusHistory = signal.statusHistory || [];
+    signal.statusHistory.push({
+      status: req.body.status,
+      updatedBy: req.userId as any,
+      updatedByName: updater?.name || 'Unknown',
+      updatedAt: new Date(),
+    });
+    await signal.save();
 
     // Broadcast status update with alarm to subscribers, without alarm to admin
     broadcastSignalUpdate(signal).catch(console.error);

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface Lead {
   _id: string;
@@ -24,6 +25,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminLeadsPage() {
+  const { user } = useAuth();
+  const canDelete = user?.role === 'ADMIN' || user?.canDeleteLeads === true;
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -289,13 +292,15 @@ export default function AdminLeadsPage() {
                       <p className="font-medium text-text-heading">{lead.name}</p>
                       <p className="text-sm text-gray-500">{lead.email}</p>
                     </div>
-                    <button
-                      onClick={() => handleDelete(lead._id)}
-                      disabled={deletingId === lead._id}
-                      className="text-xs text-signal-red hover:underline disabled:opacity-50 min-h-[32px]"
-                    >
-                      {deletingId === lead._id ? '...' : 'Delete'}
-                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(lead._id)}
+                        disabled={deletingId === lead._id}
+                        className="text-xs text-signal-red hover:underline disabled:opacity-50 min-h-[32px]"
+                      >
+                        {deletingId === lead._id ? '...' : 'Delete'}
+                      </button>
+                    )}
                   </div>
                   <div className="flex items-center justify-between text-sm mb-2">
                     <a href={`tel:${lead.phone}`} className="text-brand-emerald hover:underline">{lead.phone}</a>
@@ -404,13 +409,15 @@ export default function AdminLeadsPage() {
                       <span className="text-gray-400">{formatTime(lead.createdAt)}</span>
                     </td>
                     <td className="py-3">
-                      <button
-                        onClick={() => handleDelete(lead._id)}
-                        disabled={deletingId === lead._id}
-                        className="text-xs text-signal-red hover:underline disabled:opacity-50"
-                      >
-                        {deletingId === lead._id ? 'Deleting...' : 'Delete'}
-                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(lead._id)}
+                          disabled={deletingId === lead._id}
+                          className="text-xs text-signal-red hover:underline disabled:opacity-50"
+                        >
+                          {deletingId === lead._id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

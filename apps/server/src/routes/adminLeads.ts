@@ -3,6 +3,7 @@ import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import { adminGuard } from '../middleware/adminGuard';
 import { Lead } from '../models/Lead';
 import { Config } from '../models/Config';
+import { User } from '../models/User';
 
 const router = Router();
 
@@ -179,6 +180,12 @@ router.put('/:id', authMiddleware, adminGuard, async (req: AuthRequest, res: Res
 // Delete a lead
 router.delete('/:id', authMiddleware, adminGuard, async (req: AuthRequest, res: Response) => {
   try {
+    if (req.userRole === 'SUBADMIN') {
+      const currentUser = await User.findById(req.userId).select('canDeleteLeads');
+      if (!currentUser?.canDeleteLeads) {
+        return res.status(403).json({ success: false, error: 'You do not have permission to delete leads' });
+      }
+    }
     const lead = await Lead.findByIdAndDelete(req.params.id);
     if (!lead) {
       return res.status(404).json({ success: false, error: 'Lead not found' });

@@ -476,7 +476,7 @@ export default function PaymentPage() {
                 Back
               </button>
               <button type="submit" className="btn-primary flex-1" disabled={isSubmitting}>
-                {isSubmitting ? 'Uploading...' : 'Submit Receipt'}
+                {isSubmitting ? 'Uploading...' : 'Upload Screenshot of Payment'}
               </button>
             </div>
           </form>

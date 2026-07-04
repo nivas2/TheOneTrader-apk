@@ -112,6 +112,7 @@ export default function SignalHistoryAdminPage() {
       await api.put(`/admin/signals/${signalId}`, { status });
       toast.success(`Signal marked as ${SIGNAL_STATUS_LABELS[status] || status}`);
       fetchSignals();
+      if (activeTab === 'subadmin') fetchSubadminSignals();
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Update failed');
     }
@@ -386,6 +387,7 @@ export default function SignalHistoryAdminPage() {
                 <th className="py-3 px-2 font-medium text-gray-500">SL</th>
                 <th className="py-3 px-2 font-medium text-gray-500">Safe Exit</th>
                 <th className="py-3 px-2 font-medium text-gray-500">Status</th>
+                <th className="py-3 px-2 font-medium text-gray-500">Created By</th>
                 <th className="py-3 px-2 font-medium text-gray-500">Date</th>
                 <th className="py-3 px-2 font-medium text-gray-500">Showcase</th>
                 <th className="py-3 px-2 font-medium text-gray-500">Actions</th>
@@ -394,7 +396,7 @@ export default function SignalHistoryAdminPage() {
             <tbody>
               {signals.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="text-center py-8 text-gray-400">No signals found.</td>
+                  <td colSpan={14} className="text-center py-8 text-gray-400">No signals found.</td>
                 </tr>
               ) : (
                 signals.map((signal) => (
@@ -428,6 +430,18 @@ export default function SignalHistoryAdminPage() {
                       }`}>
                         {SIGNAL_STATUS_LABELS[signal.status] || signal.status}
                       </span>
+                      {signal.statusHistory?.length > 0 && (
+                        <div className="mt-1">
+                          {signal.statusHistory.map((h: any, idx: number) => (
+                            <p key={idx} className="text-[10px] text-gray-400">
+                              {SIGNAL_STATUS_LABELS[h.status] || h.status} by {h.updatedByName} {new Date(h.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3 px-2 text-blue-600 text-xs">
+                      {signal.createdBy?.name || 'Admin'}
                     </td>
                     <td className="py-3 px-2 text-gray-400 whitespace-nowrap">
                       {new Date(signal.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -521,12 +535,13 @@ export default function SignalHistoryAdminPage() {
                     <th className="py-3 px-2 font-medium text-gray-500">SL</th>
                     <th className="py-3 px-2 font-medium text-gray-500">Status</th>
                     <th className="py-3 px-2 font-medium text-gray-500">Date</th>
+                    <th className="py-3 px-2 font-medium text-gray-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {subadminSignals.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-8 text-gray-400">No sub-admin signals found.</td>
+                      <td colSpan={10} className="text-center py-8 text-gray-400">No sub-admin signals found.</td>
                     </tr>
                   ) : (
                     subadminSignals.map((signal) => (
@@ -552,9 +567,28 @@ export default function SignalHistoryAdminPage() {
                           }`}>
                             {SIGNAL_STATUS_LABELS[signal.status] || signal.status}
                           </span>
+                          {signal.statusHistory?.length > 0 && (
+                            <div className="mt-1">
+                              {signal.statusHistory.map((h: any, idx: number) => (
+                                <p key={idx} className="text-[10px] text-gray-400">
+                                  {SIGNAL_STATUS_LABELS[h.status] || h.status} by {h.updatedByName} {new Date(h.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              ))}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-2 text-gray-400 whitespace-nowrap">
                           {new Date(signal.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
+                        <td className="py-3 px-2">
+                          {signal.status === 'ACTIVE' && (
+                            <div className="flex flex-col gap-1">
+                              <button onClick={() => updateStatus(signal._id, 'HIT_TARGET')} className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">Target</button>
+                              <button onClick={() => updateStatus(signal._id, 'HIT_SL')} className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">SL</button>
+                              <button onClick={() => updateStatus(signal._id, 'SAFE_EXIT')} className="text-xs bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">Safe</button>
+                              <button onClick={() => updateStatus(signal._id, 'CANCELLED')} className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600">Cancel</button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))

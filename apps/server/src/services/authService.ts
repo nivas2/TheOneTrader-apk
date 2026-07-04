@@ -116,6 +116,7 @@ export async function loginUser(email: string, password: string, platform: strin
       createdAt: user.createdAt,
       allowedPages: user.allowedPages || [],
       allowedSegments: user.allowedSegments || [],
+      canDeleteLeads: user.canDeleteLeads || false,
     },
   };
 }
@@ -123,8 +124,9 @@ export async function loginUser(email: string, password: string, platform: strin
 export async function sendResetOtp(email: string): Promise<void> {
   const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
-    // Don't reveal whether email exists
-    return;
+    const error: any = new Error('No account found with this email');
+    error.statusCode = 404;
+    throw error;
   }
 
   const otpCode = generateOtp();

@@ -19,6 +19,7 @@ export interface IUserDocument extends Document {
   role: 'USER' | 'ADMIN' | 'SUBADMIN';
   allowedPages: string[];
   allowedSegments: string[];
+  canDeleteLeads: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +47,7 @@ const UserSchema = new Schema<IUserDocument>(
     role: { type: String, enum: ['USER', 'ADMIN', 'SUBADMIN'], default: 'USER' },
     allowedPages: [{ type: String }],
     allowedSegments: [{ type: String }],
+    canDeleteLeads: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

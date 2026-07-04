@@ -103,7 +103,7 @@ router.post('/payment-qr/upload', authMiddleware, mainAdminGuard, uploadPaymentQ
         fs.unlinkSync(oldPath);
       }
     }
-    config.paymentQrImagePath = req.file.path;
+    config.paymentQrImagePath = req.file.path.replace(/\\/g, '/');
     await config.save();
     res.json({ success: true, data: { paymentQrImagePath: config.paymentQrImagePath } });
   } catch (error: any) {
