@@ -40,7 +40,7 @@ export function useSignalAlarm() {
     try {
       const audio = new Audio(createAlarmBlobUrl());
       audio.loop = true;
-      audio.volume = 1.0;
+      audio.volume = 0; // Start muted; startAlarm() sets volume to 1.0
       audioRef.current = audio;
     } catch {}
 
@@ -49,14 +49,17 @@ export function useSignalAlarm() {
       if (unlocked) return;
       const audio = audioRef.current;
       if (!audio) return;
+      // Mute during unlock so user doesn't hear the brief play
+      audio.volume = 0;
       audio.play().then(() => {
         audio.pause();
         audio.currentTime = 0;
+        audio.volume = 1.0;
         unlocked = true;
         document.removeEventListener('click', unlock);
         document.removeEventListener('touchstart', unlock);
         document.removeEventListener('keydown', unlock);
-      }).catch(() => {});
+      }).catch(() => { audio.volume = 1.0; });
     };
 
     document.addEventListener('click', unlock);
@@ -86,6 +89,7 @@ export function useSignalAlarm() {
 
     const audio = audioRef.current;
     if (audio) {
+      audio.volume = 1.0;
       audio.currentTime = 0;
       audio.play().catch(() => {});
     }
