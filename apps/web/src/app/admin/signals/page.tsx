@@ -175,16 +175,47 @@ export default function CreateSignalPage() {
       toast.error('Select at least one plan');
       return;
     }
+
+    const entryMin = parseFloat(formData.entryPriceRange.min);
+    const entryMax = parseFloat(formData.entryPriceRange.max);
+    const target = parseFloat(formData.targetPrice);
+    const sl = parseFloat(formData.stopLoss);
+
+    if (!entryMin || entryMin <= 0 || !entryMax || entryMax <= 0 || !target || target <= 0 || !sl || sl <= 0) {
+      toast.error('All price fields must be greater than 0');
+      return;
+    }
+    if (entryMax < entryMin) {
+      toast.error('Entry Max must be greater than or equal to Entry Min');
+      return;
+    }
+    if (formData.action === 'BUY') {
+      if (target <= entryMax) {
+        toast.error('For BUY: Target must be above Entry Max');
+        return;
+      }
+      if (sl >= entryMin) {
+        toast.error('For BUY: Stop Loss must be below Entry Min');
+        return;
+      }
+    } else {
+      if (target >= entryMin) {
+        toast.error('For SELL: Target must be below Entry Min');
+        return;
+      }
+      if (sl <= entryMax) {
+        toast.error('For SELL: Stop Loss must be above Entry Max');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
         ...formData,
-        entryPriceRange: {
-          min: parseFloat(formData.entryPriceRange.min),
-          max: parseFloat(formData.entryPriceRange.max),
-        },
-        targetPrice: parseFloat(formData.targetPrice),
-        stopLoss: parseFloat(formData.stopLoss),
+        entryPriceRange: { min: entryMin, max: entryMax },
+        targetPrice: target,
+        stopLoss: sl,
         safeExit: formData.safeExit ? parseFloat(formData.safeExit) : undefined,
       };
       await api.post('/admin/signals', payload);

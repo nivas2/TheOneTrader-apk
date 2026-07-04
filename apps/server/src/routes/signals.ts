@@ -26,6 +26,25 @@ const createSignalSchema = z.object({
   stopLoss: z.number().positive(),
   safeExit: z.number().positive().optional(),
   note: z.string().optional(),
+}).refine((data) => data.entryPriceRange.max >= data.entryPriceRange.min, {
+  message: 'Entry Max must be greater than or equal to Entry Min',
+  path: ['entryPriceRange', 'max'],
+}).refine((data) => {
+  if (data.action === 'BUY') {
+    return data.targetPrice > data.entryPriceRange.max;
+  }
+  return data.targetPrice < data.entryPriceRange.min;
+}, {
+  message: 'For BUY, Target must be above Entry Max. For SELL, Target must be below Entry Min.',
+  path: ['targetPrice'],
+}).refine((data) => {
+  if (data.action === 'BUY') {
+    return data.stopLoss < data.entryPriceRange.min;
+  }
+  return data.stopLoss > data.entryPriceRange.max;
+}, {
+  message: 'For BUY, Stop Loss must be below Entry Min. For SELL, Stop Loss must be above Entry Max.',
+  path: ['stopLoss'],
 });
 
 const updateStatusSchema = z.object({
