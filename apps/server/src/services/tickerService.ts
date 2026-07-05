@@ -233,11 +233,11 @@ export function startTickerBroadcast(io: SocketServer): void {
   socketIO = io;
   console.log('[TickerService] Started — connecting to Angel One SmartAPI');
 
-  // Fetch initial data via REST immediately (so users see real data right away)
-  fetchViaREST();
-
-  // Start WebSocket connection for real-time updates
-  startWebSocket();
+  // Fetch initial data via REST, then connect WebSocket (sequential to avoid TOTP conflict)
+  fetchViaREST().then(() => {
+    // Wait 35 seconds for new TOTP window before WebSocket login
+    setTimeout(() => startWebSocket(), 35_000);
+  });
 
   // Periodic REST fetch: if no live data yet or WebSocket disconnected, re-fetch every 60 seconds
   setInterval(() => {
