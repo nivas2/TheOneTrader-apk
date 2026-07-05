@@ -180,7 +180,7 @@ async function startWebSocket() {
   }
 }
 
-// Fallback: Use SmartAPI REST marketData endpoint if WebSocket isn't connected
+// Fetch data via SmartAPI REST marketData endpoint
 async function fetchViaREST() {
   try {
     const totp = generateSync({ secret: ANGEL_TOTP_SECRET });
@@ -205,35 +205,47 @@ async function fetchViaREST() {
     });
 
     if (response?.data?.fetched) {
+      let count = 0;
       for (const item of response.data.fetched) {
         const token = item.symbolToken || item.symboltoken;
         if (INDEX_CONFIG[token]) {
           const ltp = parseFloat(item.ltp) || 0;
           const close = parseFloat(item.close) || 0;
           livePrices[token] = { ltp: ltp * 100, close: close * 100 }; // Match WebSocket paisa format
+          count++;
         }
       }
+      console.log(`[TickerService] REST fetched ${count} indices`);
       broadcastToClients();
+    } else {
+      console.log('[TickerService] REST response:', JSON.stringify(response?.data || response).substring(0, 200));
     }
   } catch (err) {
-    console.error('[TickerService] REST fallback error:', (err as Error).message);
+    console.error('[TickerService] REST error:', (err as Error).message);
   }
+}
+
+function hasLiveData(): boolean {
+  return Object.keys(livePrices).length > 0;
 }
 
 export function startTickerBroadcast(io: SocketServer): void {
   socketIO = io;
   console.log('[TickerService] Started — connecting to Angel One SmartAPI');
 
-  // Start WebSocket connection
+  // Fetch initial data via REST immediately (so users see real data right away)
+  fetchViaREST();
+
+  // Start WebSocket connection for real-time updates
   startWebSocket();
 
-  // Fallback polling: if WebSocket is not connected, use REST API every 30 seconds
+  // Periodic REST fetch: if no live data yet or WebSocket disconnected, re-fetch every 60 seconds
   setInterval(() => {
-    if (!wsConnected && socketIO) {
-      console.log('[TickerService] WebSocket not connected, using REST fallback');
+    if (!hasLiveData() || !wsConnected) {
+      console.log('[TickerService] Refreshing data via REST');
       fetchViaREST();
     }
-  }, 30_000);
+  }, 60_000);
 
   // Re-login every 6 hours to refresh tokens (Angel One tokens expire)
   setInterval(() => {
