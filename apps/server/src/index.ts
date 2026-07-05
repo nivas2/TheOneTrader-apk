@@ -14,6 +14,7 @@ import { initializeFirebase } from './config/firebase';
 import { errorHandler } from './middleware/errorHandler';
 import { setupSocketHandlers } from './socket/handlers';
 import { startTelemetry } from './socket/telemetry';
+import { startTickerBroadcast } from './services/tickerService';
 import { startSubscriptionCron } from './jobs/subscriptionCron';
 import { migrateDeviceTokens } from './utils/migrateDeviceTokens';
 
@@ -109,6 +110,7 @@ async function start() {
     const io = initializeSocket(server);
     setupSocketHandlers(io);
     startTelemetry(io);
+    startTickerBroadcast(io);
 
     // Start cron jobs
     startSubscriptionCron();

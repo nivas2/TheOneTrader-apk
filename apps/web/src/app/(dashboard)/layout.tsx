@@ -8,6 +8,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSignalAlarm } from '@/hooks/useSignalAlarm';
 import { useBrowserNotification } from '@/hooks/useBrowserNotification';
 import SignalNotificationPopup from '@/components/SignalNotificationPopup';
+import MarqueeBanner from '@/components/MarqueeBanner';
 import { onForegroundMessage } from '@/lib/firebase';
 
 const sidebarLinks = [
@@ -233,6 +234,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
+        <MarqueeBanner />
         <div className="p-4 md:p-6 pb-20 md:pb-6">{children}</div>
       </main>
 

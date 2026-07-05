@@ -1,14 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
-
-interface MarketIndex {
-  name: string;
-  price: string;
-  change: string;
-  up: boolean;
-}
+import { useSocket } from '@/context/SocketContext';
+import { SOCKET_EVENTS, MarketIndex } from '@theonetrade/shared-types';
 
 const FALLBACK_INDICES: MarketIndex[] = [
   { name: 'NIFTY 50', price: '24,856.30', change: '+1.12%', up: true },
@@ -22,9 +17,14 @@ const FALLBACK_INDICES: MarketIndex[] = [
   { name: 'NIFTY SMALLCAP 100', price: '18,945.60', change: '-0.15%', up: false },
 ];
 
+const SOCKET_FALLBACK_TIMEOUT = 30_000; // 30 seconds
+
 export default function MarqueeBanner() {
   const [warningText, setWarningText] = useState('');
   const [indices, setIndices] = useState<MarketIndex[]>(FALLBACK_INDICES);
+  const { socket } = useSocket();
+  const lastSocketUpdate = useRef<number>(0);
+  const fallbackTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     api.get('/public/config/public').then((res) => {
@@ -32,9 +32,8 @@ export default function MarqueeBanner() {
     }).catch(() => {});
   }, []);
 
-  // Fetch real market data
-  useEffect(() => {
-    // Detect basePath from current URL (e.g. /theonetrade)
+  // Fetch real market data via HTTP (initial load / fallback)
+  const fetchViaHttp = () => {
     const path = window.location.pathname;
     const basePath = path.startsWith('/theonetrade') ? '/theonetrade' : '';
     fetch(`${basePath}/api/market-data`)
@@ -45,6 +44,41 @@ export default function MarqueeBanner() {
         }
       })
       .catch(() => {});
+  };
+
+  // Initial HTTP fetch
+  useEffect(() => {
+    fetchViaHttp();
+  }, []);
+
+  // Socket listener for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTickerUpdate = (payload: { indices: MarketIndex[]; timestamp: number }) => {
+      if (payload.indices && payload.indices.length > 0) {
+        setIndices(payload.indices);
+        lastSocketUpdate.current = Date.now();
+      }
+    };
+
+    socket.on(SOCKET_EVENTS.TICKER_UPDATE, handleTickerUpdate);
+    return () => {
+      socket.off(SOCKET_EVENTS.TICKER_UPDATE, handleTickerUpdate);
+    };
+  }, [socket]);
+
+  // 30-second fallback: if no socket update, re-fetch via HTTP
+  useEffect(() => {
+    fallbackTimerRef.current = setInterval(() => {
+      if (Date.now() - lastSocketUpdate.current > SOCKET_FALLBACK_TIMEOUT) {
+        fetchViaHttp();
+      }
+    }, SOCKET_FALLBACK_TIMEOUT);
+
+    return () => {
+      if (fallbackTimerRef.current) clearInterval(fallbackTimerRef.current);
+    };
   }, []);
 
   return (

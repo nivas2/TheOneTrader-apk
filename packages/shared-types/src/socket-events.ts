@@ -16,6 +16,9 @@ export const SOCKET_EVENTS = {
   HEARTBEAT: 'telemetry:heartbeat',
   TELEMETRY_UPDATE: 'telemetry:update',
 
+  // Ticker events
+  TICKER_UPDATE: 'ticker:update',
+
   // Connection events
   CONNECTION: 'connection',
   DISCONNECT: 'disconnect',
@@ -61,4 +64,16 @@ export interface PaymentPendingPayload {
   userName: string;
   planType: string;
   segment: string;
+}
+
+export interface MarketIndex {
+  name: string;
+  price: string;
+  change: string;
+  up: boolean;
+}
+
+export interface TickerUpdatePayload {
+  indices: MarketIndex[];
+  timestamp: number;
 }
