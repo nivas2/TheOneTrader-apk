@@ -30,9 +30,9 @@ export default function Navbar() {
   return (
     <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           <Link href="/" className="flex items-center">
-            <Image src="/logo.png" alt="TheOneTrade" width={140} height={48} className="h-10 w-auto" priority />
+            <Image src="/logo.png" alt="TheOneTrade" width={200} height={64} className="h-14 w-auto" priority />
           </Link>
 
           {/* Desktop nav */}
