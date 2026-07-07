@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState, useRef } from 'react';
@@ -96,7 +97,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const sidebarContent = (
     <div className="flex flex-col h-full">
       <div className="p-6 flex items-center justify-between flex-shrink-0">
-        <Link href="/admin/dashboard" className="text-xl font-bold text-brand-emerald">Admin Panel</Link>
+        <Link href="/admin/dashboard" className="flex items-center">
+          <Image src="/logo.png" alt="TheOneTrade" width={240} height={90} className="h-9 w-auto brightness-0 invert" />
+        </Link>
         <button onClick={() => setSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
       </div>
       <nav className="mt-4 flex-1 overflow-y-auto">

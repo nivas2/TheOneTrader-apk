@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -29,7 +30,8 @@ function VerifyForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-gray py-12 px-4">
       <div className="card max-w-md w-full text-center">
-        <h1 className="text-3xl font-bold text-brand-emerald mb-2">Verify Email</h1>
+        <Image src="/logo.png" alt="TheOneTrade" width={340} height={127} className="h-20 w-auto mx-auto" />
+        <h1 className="text-xl font-bold text-brand-emerald mt-4 mb-2">Verify Email</h1>
         <p className="text-text-body mb-6">
           Enter the 6-digit code sent to <strong>{email}</strong>
         </p>

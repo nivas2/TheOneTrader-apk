@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -47,7 +48,8 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-brand-gray py-12 px-4">
       <div className="card max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-brand-emerald">Reset Password</h1>
+          <Image src="/logo.png" alt="TheOneTrade" width={340} height={127} className="h-20 w-auto mx-auto" />
+          <h1 className="text-xl font-bold text-brand-emerald mt-4">Reset Password</h1>
           <p className="text-text-body mt-2">
             {step === 'email' ? 'Enter your email to receive a reset code' : 'Enter the code and your new password'}
           </p>
