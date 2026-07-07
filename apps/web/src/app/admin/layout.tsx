@@ -98,7 +98,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex flex-col h-full">
       <div className="p-6 flex items-center justify-between flex-shrink-0">
         <Link href="/admin/dashboard" className="flex items-center">
-          <Image src="/logo.png" alt="TheOneTrade" width={240} height={90} className="h-9 w-auto brightness-0 invert" />
+          <Image src="/logo.png" alt="TheOneTrade" width={340} height={127} className="h-12 w-auto brightness-0 invert" />
         </Link>
         <button onClick={() => setSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
       </div>

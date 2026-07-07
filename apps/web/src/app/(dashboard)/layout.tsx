@@ -135,9 +135,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const sidebarContent = (
     <div className="flex flex-col h-full">
       <div className="p-4 pb-3">
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl px-4 py-3 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <Image src="/logo.png" alt="TheOneTrade" width={240} height={90} className="h-9 w-auto brightness-0 invert" />
+            <Image src="/logo.png" alt="TheOneTrade" width={340} height={127} className="h-12 w-auto brightness-0 invert" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white/80 hover:text-white text-2xl leading-none">&times;</button>
         </div>
