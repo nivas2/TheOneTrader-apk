@@ -137,7 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="p-4 pb-3">
         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <Image src="/logo.png" alt="TheOneTrade" width={120} height={40} className="h-8 w-auto brightness-0 invert" />
+            <Image src="/logo.png" alt="TheOneTrade" width={180} height={48} className="h-10 w-auto brightness-0 invert" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white/80 hover:text-white text-2xl leading-none">&times;</button>
         </div>

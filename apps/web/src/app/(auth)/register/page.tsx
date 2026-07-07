@@ -108,7 +108,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-brand-gray py-12 px-4">
       <div className="card max-w-md w-full">
         <div className="text-center mb-8">
-          <Image src="/logo.png" alt="TheOneTrade" width={180} height={60} className="h-14 w-auto mx-auto" />
+          <Image src="/logo.png" alt="TheOneTrade" width={280} height={72} className="h-20 w-auto mx-auto" />
           <p className="text-text-body mt-2">Create your account</p>
         </div>
 
