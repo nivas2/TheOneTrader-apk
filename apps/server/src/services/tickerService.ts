@@ -31,6 +31,8 @@ const DISPLAY_ORDER = [
 let lastKnownData: MarketIndex[] = [];
 let socketIO: SocketServer | null = null;
 let wsConnected = false;
+let lastDataUpdate = 0;
+let tickCount = 0;
 
 function formatPrice(value: number): string {
   return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -39,6 +41,17 @@ function formatPrice(value: number): string {
 function formatChange(pChange: number): string {
   const sign = pChange >= 0 ? '+' : '';
   return `${sign}${pChange.toFixed(2)}%`;
+}
+
+function isMarketOpen(): boolean {
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(now.getTime() + istOffset + now.getTimezoneOffset() * 60 * 1000);
+  const day = ist.getDay(); // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false;
+  const minutes = ist.getHours() * 60 + ist.getMinutes();
+  // 9:15 AM = 555 min, 3:30 PM = 930 min
+  return minutes >= 555 && minutes <= 930;
 }
 
 // Store live prices keyed by token
@@ -53,6 +66,9 @@ function buildIndicesFromLive(): MarketIndex[] {
       const change = price.close > 0
         ? ((price.ltp - price.close) / price.close) * 100
         : 0;
+      if (Math.abs(change) > 10) {
+        console.warn(`[TickerService] WARNING: ${config.name} change ${change.toFixed(2)}% — ltp=${price.ltp} close=${price.close} (possible stale close)`);
+      }
       indices.push({
         name: config.name,
         price: formatPrice(price.ltp / 100), // SmartAPI sends prices in paisa
@@ -71,11 +87,14 @@ function broadcastToClients() {
   const indices = buildIndicesFromLive();
   if (indices.length > 0) {
     lastKnownData = indices;
+    lastDataUpdate = Date.now();
   }
   if (lastKnownData.length > 0) {
     socketIO.emit(SOCKET_EVENTS.TICKER_UPDATE, {
       indices: lastKnownData,
       timestamp: Date.now(),
+      marketOpen: isMarketOpen(),
+      lastUpdated: lastDataUpdate,
     });
   }
 }
@@ -111,6 +130,7 @@ function connectWebSocket(jwtToken: string, feedToken: string) {
   ws.connect()
     .then(() => {
       wsConnected = true;
+      tickCount = 0;
       console.log('[TickerService] WebSocket connected - subscribing to indices');
 
       // Group tokens by exchange type
@@ -153,6 +173,13 @@ function connectWebSocket(jwtToken: string, feedToken: string) {
 
         const ltp = parseFloat(data.last_traded_price) || 0;
         const close = parseFloat(data.close_price) || 0;
+
+        // Log first 5 ticks for debugging
+        if (tickCount < 5) {
+          const config = INDEX_CONFIG[token];
+          console.log(`[TickerService] WS tick #${tickCount}: ${config.name} — ltp=${ltp} close=${close} (token=${token})`);
+          tickCount++;
+        }
 
         livePrices[token] = { ltp, close };
         broadcastToClients();
@@ -211,6 +238,7 @@ async function fetchViaREST() {
         if (INDEX_CONFIG[token]) {
           const ltp = parseFloat(item.ltp) || 0;
           const close = parseFloat(item.close) || 0;
+          console.log(`[TickerService] REST: ${INDEX_CONFIG[token].name} — ltp=${ltp} close=${close}`);
           livePrices[token] = { ltp: ltp * 100, close: close * 100 }; // Match WebSocket paisa format
           count++;
         }
@@ -225,10 +253,6 @@ async function fetchViaREST() {
   }
 }
 
-function hasLiveData(): boolean {
-  return Object.keys(livePrices).length > 0;
-}
-
 export function startTickerBroadcast(io: SocketServer): void {
   socketIO = io;
   console.log('[TickerService] Started — connecting to Angel One SmartAPI');
@@ -239,12 +263,10 @@ export function startTickerBroadcast(io: SocketServer): void {
     setTimeout(() => startWebSocket(), 35_000);
   });
 
-  // Periodic REST fetch: if no live data yet or WebSocket disconnected, re-fetch every 60 seconds
+  // ALWAYS refresh via REST every 60s — serves as ground truth to correct stale WebSocket close prices
   setInterval(() => {
-    if (!hasLiveData() || !wsConnected) {
-      console.log('[TickerService] Refreshing data via REST');
-      fetchViaREST();
-    }
+    console.log('[TickerService] Periodic REST refresh');
+    fetchViaREST();
   }, 60_000);
 
   // Re-login every 6 hours to refresh tokens (Angel One tokens expire)

@@ -76,4 +76,6 @@ export interface MarketIndex {
 export interface TickerUpdatePayload {
   indices: MarketIndex[];
   timestamp: number;
+  marketOpen: boolean;
+  lastUpdated: number;
 }

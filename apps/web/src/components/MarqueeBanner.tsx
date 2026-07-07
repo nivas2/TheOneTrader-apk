@@ -5,23 +5,13 @@ import api from '@/lib/api';
 import { useSocket } from '@/context/SocketContext';
 import { SOCKET_EVENTS, MarketIndex } from '@theonetrade/shared-types';
 
-const FALLBACK_INDICES: MarketIndex[] = [
-  { name: 'NIFTY 50', price: '24,856.30', change: '+1.12%', up: true },
-  { name: 'SENSEX', price: '81,523.16', change: '+0.98%', up: true },
-  { name: 'BANKNIFTY', price: '53,412.85', change: '+1.34%', up: true },
-  { name: 'NIFTY MIDCAP 100', price: '62,123.35', change: '+0.52%', up: true },
-  { name: 'NIFTY NEXT 50', price: '73,450.20', change: '+0.68%', up: true },
-  { name: 'FINNIFTY', price: '25,120.45', change: '+0.91%', up: true },
-  { name: 'NIFTY 100', price: '25,340.10', change: '+0.85%', up: true },
-  { name: 'NIFTY 500', price: '23,180.75', change: '+0.72%', up: true },
-  { name: 'NIFTY SMALLCAP 100', price: '18,945.60', change: '-0.15%', up: false },
-];
-
 const SOCKET_FALLBACK_TIMEOUT = 30_000; // 30 seconds
 
 export default function MarqueeBanner() {
   const [warningText, setWarningText] = useState('');
-  const [indices, setIndices] = useState<MarketIndex[]>(FALLBACK_INDICES);
+  const [indices, setIndices] = useState<MarketIndex[]>([]);
+  const [marketOpen, setMarketOpen] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(0);
   const { socket } = useSocket();
   const lastSocketUpdate = useRef<number>(0);
   const fallbackTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -55,11 +45,18 @@ export default function MarqueeBanner() {
   useEffect(() => {
     if (!socket) return;
 
-    const handleTickerUpdate = (payload: { indices: MarketIndex[]; timestamp: number }) => {
+    const handleTickerUpdate = (payload: {
+      indices: MarketIndex[];
+      timestamp: number;
+      marketOpen?: boolean;
+      lastUpdated?: number;
+    }) => {
       if (payload.indices && payload.indices.length > 0) {
         setIndices(payload.indices);
         lastSocketUpdate.current = Date.now();
       }
+      if (payload.marketOpen !== undefined) setMarketOpen(payload.marketOpen);
+      if (payload.lastUpdated) setLastUpdated(payload.lastUpdated);
     };
 
     socket.on(SOCKET_EVENTS.TICKER_UPDATE, handleTickerUpdate);
@@ -81,10 +78,34 @@ export default function MarqueeBanner() {
     };
   }, []);
 
+  const formatLastUpdated = () => {
+    if (!lastUpdated) return '';
+    const date = new Date(lastUpdated);
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+
+  // Loading state — no data yet
+  if (indices.length === 0) {
+    return (
+      <>
+        <div className="bg-white border-b border-gray-100 overflow-hidden">
+          <div className="py-2.5 flex items-center justify-center">
+            <span className="text-sm text-gray-400">Loading market data...</span>
+          </div>
+        </div>
+        {warningText && (
+          <div className="bg-signal-red text-white py-1.5 text-center">
+            <p className="text-xs font-medium">{warningText}</p>
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       {/* Market index ticker */}
-      <div className="bg-white border-b border-gray-100 overflow-hidden">
+      <div className="bg-white border-b border-gray-100 overflow-hidden relative">
         <div className="animate-marquee whitespace-nowrap py-2.5">
           {[...indices, ...indices].map((idx, i) => (
             <span key={i} className="inline-flex items-center mx-6 text-sm">
@@ -95,6 +116,17 @@ export default function MarqueeBanner() {
               </span>
             </span>
           ))}
+        </div>
+        {/* Market status badge */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white pl-4">
+          {!marketOpen && (
+            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-medium">
+              Market Closed
+            </span>
+          )}
+          {lastUpdated > 0 && (
+            <span className="text-xs text-gray-400">{formatLastUpdated()}</span>
+          )}
         </div>
       </div>
 
