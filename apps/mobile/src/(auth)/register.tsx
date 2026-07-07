@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 
@@ -37,7 +37,7 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.brand}>TheOneTrade</Text>
+        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.subtitle}>Create your account</Text>
 
         <View style={styles.form}>
@@ -69,7 +69,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  brand: { fontSize: 32, fontWeight: '700', color: '#00B090', textAlign: 'center' },
+  logo: { width: 200, height: 80, alignSelf: 'center' as const },
   subtitle: { fontSize: 16, color: '#4B5563', textAlign: 'center', marginTop: 8, marginBottom: 32 },
   form: { gap: 16 },
   input: {
