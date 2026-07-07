@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
@@ -82,7 +83,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-brand-gray py-12 px-4">
       <div className="card max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-brand-emerald">TheOneTrade</h1>
+          <Image src="/logo.png" alt="TheOneTrade" width={180} height={60} className="h-14 w-auto mx-auto" />
           <p className="text-text-body mt-2">Sign in to your account</p>
         </div>
 

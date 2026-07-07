@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -30,8 +31,8 @@ export default function Navbar() {
     <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold text-brand-emerald">TheOneTrade</span>
+          <Link href="/" className="flex items-center">
+            <Image src="/logo.png" alt="TheOneTrade" width={140} height={48} className="h-10 w-auto" priority />
           </Link>
 
           {/* Desktop nav */}

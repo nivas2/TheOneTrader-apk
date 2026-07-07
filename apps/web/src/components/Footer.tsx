@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import api from '@/lib/api';
 
 interface FooterContent {
@@ -79,7 +80,7 @@ export default function Footer() {
         {/* Desktop: 4-column grid */}
         <div className="hidden md:grid md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-white text-lg font-bold mb-4">TheOneTrade</h3>
+            <Image src="/logo.png" alt="TheOneTrade" width={140} height={48} className="h-10 w-auto brightness-0 invert mb-4" />
             <p className="text-sm">{footer.brandDescription}</p>
             {socialIcons.length > 0 && (
               <div className="flex gap-3 mt-4">
@@ -127,7 +128,7 @@ export default function Footer() {
         {/* Mobile */}
         <div className="md:hidden space-y-6">
           <div>
-            <h3 className="text-white text-lg font-bold mb-2">TheOneTrade</h3>
+            <Image src="/logo.png" alt="TheOneTrade" width={140} height={48} className="h-10 w-auto brightness-0 invert mb-2" />
             <p className="text-sm">{footer.brandDescription}</p>
             {socialIcons.length > 0 && (
               <div className="flex gap-4 mt-3">

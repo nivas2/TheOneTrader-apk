@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/context/SocketContext';
@@ -135,7 +136,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex flex-col h-full">
       <div className="p-4 pb-3">
         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold text-white tracking-tight">TheOneTrade</Link>
+          <Link href="/" className="flex items-center">
+            <Image src="/logo.png" alt="TheOneTrade" width={120} height={40} className="h-8 w-auto brightness-0 invert" />
+          </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white/80 hover:text-white text-2xl leading-none">&times;</button>
         </div>
       </div>
