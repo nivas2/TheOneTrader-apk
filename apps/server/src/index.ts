@@ -14,7 +14,7 @@ import { initializeFirebase } from './config/firebase';
 import { errorHandler } from './middleware/errorHandler';
 import { setupSocketHandlers } from './socket/handlers';
 import { startTelemetry } from './socket/telemetry';
-import { startTickerBroadcast } from './services/tickerService';
+import { startTickerBroadcast, getTickerData } from './services/tickerService';
 import { startSubscriptionCron } from './jobs/subscriptionCron';
 import { migrateDeviceTokens } from './utils/migrateDeviceTokens';
 
@@ -82,6 +82,11 @@ app.use('/api/v1/landing-content', landingContentRoutes);
 app.use('/api/v1/public/landing-content', landingContentRoutes);
 app.use('/api/v1/admin/sub-admins', subadminRoutes);
 app.use('/api/v1/admin/leads', adminLeadRoutes);
+
+// Ticker data endpoint (used by Next.js /api/market-data proxy)
+app.get('/api/v1/ticker', (_req, res) => {
+  res.json(getTickerData());
+});
 
 // Health check
 app.get('/api/v1/health', (_req, res) => {

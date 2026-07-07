@@ -253,6 +253,15 @@ async function fetchViaREST() {
   }
 }
 
+export function getTickerData() {
+  return {
+    indices: lastKnownData,
+    timestamp: Date.now(),
+    marketOpen: isMarketOpen(),
+    lastUpdated: lastDataUpdate,
+  };
+}
+
 export function startTickerBroadcast(io: SocketServer): void {
   socketIO = io;
   console.log('[TickerService] Started — connecting to Angel One SmartAPI');
