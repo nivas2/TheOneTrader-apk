@@ -98,7 +98,7 @@ export default function AdminPaymentsPage() {
     if (!filePath) return '';
     if (filePath.startsWith('http')) return filePath;
     const filename = filePath.replace(/\\/g, '/').split('/').pop();
-    return `${API_BASE}/uploads/${filename}`;
+    return `${API_BASE}/uploads/receipts/${filename}`;
   };
 
   const formatDate = (d: string) =>
