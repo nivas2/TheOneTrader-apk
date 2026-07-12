@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { useAuth } from '../../src/context/AuthContext';
 import { connectSocket, getSocket } from '../../src/services/socket';
@@ -12,6 +13,7 @@ function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
   const { token } = useAuth();
   const router = useRouter();
   const [alertSignal, setAlertSignal] = useState<any>(null);
@@ -137,7 +139,7 @@ export default function TabsLayout() {
           tabBarInactiveTintColor: '#9CA3AF',
           headerStyle: { backgroundColor: '#FFF' },
           headerTitleStyle: { color: '#1F2937', fontWeight: '700' },
-          tabBarStyle: { paddingBottom: 4, height: 56 },
+          tabBarStyle: { paddingBottom: insets.bottom || 4, height: 56 + (insets.bottom || 0) },
         }}
       >
         <Tabs.Screen
