@@ -10,7 +10,9 @@ export default function HistoryPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [startDate, setStartDate] = useState(() => {
-    return new Date().toISOString().split('T')[0];
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
   });
   const [endDate, setEndDate] = useState(() => {
     return new Date().toISOString().split('T')[0];

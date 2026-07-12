@@ -86,11 +86,25 @@ export default function MarqueeBanner() {
 
   // Loading state — no data yet
   if (indices.length === 0) {
+    // Check if market is closed (weekend or outside hours) to avoid perpetual "Loading..."
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const ist = new Date(now.getTime() + istOffset + now.getTimezoneOffset() * 60 * 1000);
+    const day = ist.getDay();
+    const minutes = ist.getHours() * 60 + ist.getMinutes();
+    const isWeekend = day === 0 || day === 6;
+    const isOutsideHours = minutes < 555 || minutes > 930;
+    const isClosed = isWeekend || isOutsideHours;
+
     return (
       <>
         <div className="bg-white border-b border-gray-100 overflow-hidden">
-          <div className="py-2.5 flex items-center justify-center">
-            <span className="text-sm text-gray-400">Loading market data...</span>
+          <div className="py-2.5 flex items-center justify-center gap-2">
+            {isClosed ? (
+              <span className="text-sm text-gray-400">Market Closed</span>
+            ) : (
+              <span className="text-sm text-gray-400">Loading market data...</span>
+            )}
           </div>
         </div>
         {warningText && (
