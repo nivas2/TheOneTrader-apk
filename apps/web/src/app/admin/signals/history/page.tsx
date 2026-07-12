@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { SEGMENT_LABELS, SUBCATEGORY_LABELS, SIGNAL_STATUS_LABELS, INTERVAL_LABELS } from '@/lib/labels';
 import { useAuth } from '@/context/AuthContext';
+import Swal from 'sweetalert2';
 
 export default function SignalHistoryAdminPage() {
   const { user } = useAuth();
@@ -125,6 +126,27 @@ export default function SignalHistoryAdminPage() {
       fetchSignals();
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Toggle failed');
+    }
+  };
+
+  const deleteSignal = async (signalId: string, instrument: string) => {
+    const result = await Swal.fire({
+      title: `Delete signal?`,
+      text: `"${instrument}" will be permanently deleted.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete',
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await api.delete(`/admin/signals/${signalId}`);
+      toast.success('Signal deleted');
+      fetchSignals();
+      if (activeTab === 'subadmin') fetchSubadminSignals();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Delete failed');
     }
   };
 
@@ -359,14 +381,19 @@ export default function SignalHistoryAdminPage() {
                 <div className="text-xs text-gray-400 mb-2">
                   {new Date(signal.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} {new Date(signal.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                 </div>
-                {signal.status === 'ACTIVE' && (
-                  <div className="flex gap-2 flex-wrap">
-                    <button onClick={() => updateStatus(signal._id, 'HIT_TARGET')} className="text-xs bg-green-500 text-white px-3 min-h-[36px] rounded hover:bg-green-600">Target</button>
-                    <button onClick={() => updateStatus(signal._id, 'HIT_SL')} className="text-xs bg-red-500 text-white px-3 min-h-[36px] rounded hover:bg-red-600">SL</button>
-                    <button onClick={() => updateStatus(signal._id, 'SAFE_EXIT')} className="text-xs bg-yellow-500 text-white px-3 min-h-[36px] rounded hover:bg-yellow-600">Safe</button>
-                    <button onClick={() => updateStatus(signal._id, 'CANCELLED')} className="text-xs bg-gray-500 text-white px-3 min-h-[36px] rounded hover:bg-gray-600">Cancel</button>
-                  </div>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  {signal.status === 'ACTIVE' && (
+                    <>
+                      <button onClick={() => updateStatus(signal._id, 'HIT_TARGET')} className="text-xs bg-green-500 text-white px-3 min-h-[36px] rounded hover:bg-green-600">Target</button>
+                      <button onClick={() => updateStatus(signal._id, 'HIT_SL')} className="text-xs bg-red-500 text-white px-3 min-h-[36px] rounded hover:bg-red-600">SL</button>
+                      <button onClick={() => updateStatus(signal._id, 'SAFE_EXIT')} className="text-xs bg-yellow-500 text-white px-3 min-h-[36px] rounded hover:bg-yellow-600">Safe</button>
+                      <button onClick={() => updateStatus(signal._id, 'CANCELLED')} className="text-xs bg-gray-500 text-white px-3 min-h-[36px] rounded hover:bg-gray-600">Cancel</button>
+                    </>
+                  )}
+                  {isMainAdmin && (
+                    <button onClick={() => deleteSignal(signal._id, signal.instrument)} className="text-xs bg-red-100 text-red-600 px-3 min-h-[36px] rounded hover:bg-red-200">Delete</button>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -458,14 +485,19 @@ export default function SignalHistoryAdminPage() {
                       </button>
                     </td>
                     <td className="py-3 px-2">
-                      {signal.status === 'ACTIVE' && (
-                        <div className="flex flex-col gap-1">
-                          <button onClick={() => updateStatus(signal._id, 'HIT_TARGET')} className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">Target</button>
-                          <button onClick={() => updateStatus(signal._id, 'HIT_SL')} className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">SL</button>
-                          <button onClick={() => updateStatus(signal._id, 'SAFE_EXIT')} className="text-xs bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">Safe</button>
-                          <button onClick={() => updateStatus(signal._id, 'CANCELLED')} className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600">Cancel</button>
-                        </div>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {signal.status === 'ACTIVE' && (
+                          <>
+                            <button onClick={() => updateStatus(signal._id, 'HIT_TARGET')} className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">Target</button>
+                            <button onClick={() => updateStatus(signal._id, 'HIT_SL')} className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">SL</button>
+                            <button onClick={() => updateStatus(signal._id, 'SAFE_EXIT')} className="text-xs bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">Safe</button>
+                            <button onClick={() => updateStatus(signal._id, 'CANCELLED')} className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600">Cancel</button>
+                          </>
+                        )}
+                        {isMainAdmin && (
+                          <button onClick={() => deleteSignal(signal._id, signal.instrument)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200">Delete</button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -581,14 +613,17 @@ export default function SignalHistoryAdminPage() {
                           {new Date(signal.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </td>
                         <td className="py-3 px-2">
-                          {signal.status === 'ACTIVE' && (
-                            <div className="flex flex-col gap-1">
-                              <button onClick={() => updateStatus(signal._id, 'HIT_TARGET')} className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">Target</button>
-                              <button onClick={() => updateStatus(signal._id, 'HIT_SL')} className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">SL</button>
-                              <button onClick={() => updateStatus(signal._id, 'SAFE_EXIT')} className="text-xs bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">Safe</button>
-                              <button onClick={() => updateStatus(signal._id, 'CANCELLED')} className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600">Cancel</button>
-                            </div>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            {signal.status === 'ACTIVE' && (
+                              <>
+                                <button onClick={() => updateStatus(signal._id, 'HIT_TARGET')} className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">Target</button>
+                                <button onClick={() => updateStatus(signal._id, 'HIT_SL')} className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">SL</button>
+                                <button onClick={() => updateStatus(signal._id, 'SAFE_EXIT')} className="text-xs bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">Safe</button>
+                                <button onClick={() => updateStatus(signal._id, 'CANCELLED')} className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600">Cancel</button>
+                              </>
+                            )}
+                            <button onClick={() => deleteSignal(signal._id, signal.instrument)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200">Delete</button>
+                          </div>
                         </td>
                       </tr>
                     ))

@@ -373,6 +373,21 @@ router.put('/:id', authMiddleware, adminGuard, validate(updateStatusSchema), asy
   }
 });
 
+// Admin only: delete signal permanently
+router.delete('/:id', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
+  try {
+    const signal = await Signal.findById(req.params.id);
+    if (!signal) {
+      res.status(404).json({ success: false, error: 'Signal not found' });
+      return;
+    }
+    await Signal.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Signal deleted' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Public: performance board
 router.get('/performance', async (req: Request, res: Response) => {
   try {
