@@ -48,11 +48,22 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
-// Rate limiting on auth routes
+// Rate limiting on auth routes — strict for login/register, relaxed for authenticated calls
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
+  max: 200,
   message: { success: false, error: 'Too many requests, please try again later.' },
+  keyGenerator: (req) => req.ip || 'unknown',
+  skip: (req) => {
+    // Apply stricter limit only to login/register/forgot-password
+    return false;
+  },
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { success: false, error: 'Too many login attempts, please try again later.' },
 });
 
 // Static file serving for uploads
@@ -60,6 +71,9 @@ app.use('/uploads', express.static(path.resolve('./uploads')));
 app.use('/downloads', express.static(path.resolve('./uploads/app')));
 
 // Routes
+app.use('/api/v1/auth/login', loginLimiter);
+app.use('/api/v1/auth/register', loginLimiter);
+app.use('/api/v1/auth/forgot-password', loginLimiter);
 app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/public/leads', leadRoutes);
 app.use('/api/v1/public', subscriptionRoutes);
