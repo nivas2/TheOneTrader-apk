@@ -114,6 +114,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ? adminLinks.filter((link) => allowedPages.includes(link.href))
     : adminLinks;
 
+  // Block render for sub-admins on unauthorized pages
+  if (isSubAdmin) {
+    const currentLink = adminLinks.find((link) => pathname === link.href || pathname?.startsWith(link.href + '/'));
+    if (currentLink && !allowedPages.includes(currentLink.href)) {
+      return (
+        <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+          <p className="text-gray-500 text-lg">You don&apos;t have access to this page.</p>
+          {allowedPages.length > 0 && (
+            <Link href={allowedPages[0]} className="text-brand-emerald hover:underline text-sm">Go to {adminLinks.find((l) => l.href === allowedPages[0])?.label || 'Dashboard'}</Link>
+          )}
+        </div>
+      );
+    }
+  }
+
   const sidebarContent = (
     <div className="flex flex-col h-full">
       <div className="p-6 flex items-center justify-between flex-shrink-0">
