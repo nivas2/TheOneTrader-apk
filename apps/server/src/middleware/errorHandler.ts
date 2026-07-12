@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 
 export class AppError extends Error {
   statusCode: number;
@@ -39,11 +40,27 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     return;
   }
 
-  // Multer file size error
-  if (err.message?.includes('File too large')) {
+  // Multer errors (file size, file type, etc.)
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      res.status(413).json({
+        success: false,
+        error: 'File too large. Please check the maximum file size limit.',
+      });
+      return;
+    }
     res.status(400).json({
       success: false,
-      error: 'File too large. Maximum size is 5MB.',
+      error: err.message,
+    });
+    return;
+  }
+
+  // Multer file filter errors (invalid file type)
+  if (err.message?.includes('Invalid file type')) {
+    res.status(400).json({
+      success: false,
+      error: err.message,
     });
     return;
   }

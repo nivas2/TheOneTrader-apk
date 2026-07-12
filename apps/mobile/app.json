@@ -29,7 +29,8 @@
             "./assets/alarm.wav"
           ]
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "router": {},
