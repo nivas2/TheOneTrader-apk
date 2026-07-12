@@ -1,0 +1,69 @@
+name: Build WebView APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/webview-app/**'
+      - '.github/workflows/build-webview-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Expo prebuild Android
+        working-directory: apps/webview-app
+        run: npx expo prebuild --platform android --clean
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platforms
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Build APK
+        working-directory: apps/webview-app/android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Find and rename APK
+        run: |
+          mkdir -p artifacts
+          APK=$(find apps/webview-app/android -name "*.apk" -path "*/release/*" | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: No release APK found!"
+            find apps/webview-app/android -name "*.apk" 2>/dev/null
+            exit 1
+          fi
+          cp "$APK" artifacts/TheOneTrade-WebView.apk
+          echo "APK: $APK"
+          ls -lh artifacts/TheOneTrade-WebView.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheOneTrade-WebView-APK
+          path: artifacts/TheOneTrade-WebView.apk
+          retention-days: 90
