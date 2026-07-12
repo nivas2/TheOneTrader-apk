@@ -43,9 +43,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/login');
       } else if (user.role !== 'ADMIN' && user.role !== 'SUBADMIN') {
         router.push('/signals');
+      } else if (user.role === 'SUBADMIN') {
+        // Block sub-admin from accessing pages not in their allowedPages
+        const allowed = user.allowedPages || [];
+        if (allowed.length === 0) {
+          // No pages assigned — nothing to show
+          return;
+        }
+        const currentLink = adminLinks.find((link) => pathname === link.href || pathname?.startsWith(link.href + '/'));
+        if (currentLink && !allowed.includes(currentLink.href)) {
+          router.push(allowed[0]);
+        }
       }
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, pathname]);
 
   // Register admin FCM token on mount
   useEffect(() => {
@@ -86,6 +97,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isLoading || !user || (user.role !== 'ADMIN' && user.role !== 'SUBADMIN')) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (isSubAdmin && (user.allowedPages || []).length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+        <p className="text-gray-500 text-lg">No pages have been assigned to your account.</p>
+        <button onClick={logout} className="text-red-500 hover:underline text-sm">Logout</button>
+      </div>
+    );
   }
 
   // Filter sidebar links for sub-admins

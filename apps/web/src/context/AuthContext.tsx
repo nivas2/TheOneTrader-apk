@@ -50,8 +50,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedUser = localStorage.getItem('user');
     if (savedToken && savedUser) {
       setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
       registerFCM();
+      // Refresh user data from server to get latest permissions
+      api.get('/auth/me')
+        .then((res) => {
+          const freshUser = res.data.data;
+          setUser(freshUser);
+          localStorage.setItem('user', JSON.stringify(freshUser));
+        })
+        .catch(() => {
+          // Token invalid/expired — clear session
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setToken(null);
+          setUser(null);
+        });
     }
     setIsLoading(false);
   }, []);

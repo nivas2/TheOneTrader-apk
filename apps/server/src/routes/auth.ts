@@ -102,6 +102,33 @@ router.post('/reset-password', validate(resetPasswordSchema), async (req: Reques
   }
 });
 
+router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.userId).select('name email phone role isVerified createdAt allowedPages allowedSegments canDeleteLeads');
+    if (!user) {
+      res.status(404).json({ success: false, error: 'User not found' });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+        allowedPages: user.allowedPages || [],
+        allowedSegments: user.allowedSegments || [],
+        canDeleteLeads: user.canDeleteLeads || false,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.put('/profile', authMiddleware, validate(updateProfileSchema), async (req: AuthRequest, res: Response) => {
   try {
     const updated = await authService.updateProfile(req.userId!, req.body);
