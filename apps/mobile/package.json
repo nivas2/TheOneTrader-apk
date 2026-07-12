@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "^6.1.2",
+    "@react-native-community/datetimepicker": "8.4.4",
     "@theonetrade/shared-types": "workspace:*",
     "axios": "^1.6.5",
     "expo": "~54.0.35",
