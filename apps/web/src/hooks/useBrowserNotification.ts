@@ -4,10 +4,50 @@ import { useEffect, useRef, useCallback } from 'react';
 
 export function useBrowserNotification() {
   const permissionRef = useRef<NotificationPermission>('default');
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
+  // Create persistent AudioContext and unlock on user gesture
   useEffect(() => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
-    permissionRef.current = Notification.permission;
+    if (typeof window === 'undefined') return;
+    if ('Notification' in window) {
+      permissionRef.current = Notification.permission;
+    }
+
+    try {
+      audioCtxRef.current = new AudioContext();
+    } catch {}
+
+    const unlock = () => {
+      const ctx = audioCtxRef.current;
+      if (!ctx || ctx.state !== 'suspended') {
+        if (ctx && ctx.state === 'running') removeListeners();
+        return;
+      }
+      ctx.resume().then(() => {
+        removeListeners();
+      }).catch(() => {});
+    };
+
+    const removeListeners = () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+      document.removeEventListener('keydown', unlock);
+    };
+
+    document.addEventListener('click', unlock);
+    document.addEventListener('touchstart', unlock);
+    document.addEventListener('keydown', unlock);
+
+    // Try immediate resume — user activation from login may still be valid
+    unlock();
+
+    return () => {
+      removeListeners();
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
+    };
   }, []);
 
   const requestPermission = useCallback(async () => {
@@ -24,21 +64,29 @@ export function useBrowserNotification() {
 
   const playNotificationSound = useCallback(() => {
     try {
-      const ctx = new AudioContext();
+      let ctx = audioCtxRef.current;
+      if (!ctx || ctx.state === 'closed') {
+        ctx = new AudioContext();
+        audioCtxRef.current = ctx;
+      }
+      // Try to resume if suspended (best-effort)
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
       const now = ctx.currentTime;
 
       // Two-tone chime: C5 then E5
       const freqs = [523.25, 659.25];
       freqs.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        const osc = ctx!.createOscillator();
+        const gain = ctx!.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, now);
         gain.gain.setValueAtTime(0, now + i * 0.15);
         gain.gain.linearRampToValueAtTime(0.4, now + i * 0.15 + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.4);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(ctx!.destination);
         osc.start(now + i * 0.15);
         osc.stop(now + i * 0.15 + 0.5);
       });

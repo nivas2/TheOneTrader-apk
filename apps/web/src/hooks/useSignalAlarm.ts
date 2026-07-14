@@ -33,6 +33,9 @@ export function useSignalAlarm() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { socket } = useSocket();
 
+  const unlockedRef = useRef(false);
+  const pendingAlarmRef = useRef<number | null>(null);
+
   // Create audio element and unlock on user interaction
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -44,9 +47,14 @@ export function useSignalAlarm() {
       audioRef.current = audio;
     } catch {}
 
-    let unlocked = false;
+    const removeListeners = () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+      document.removeEventListener('keydown', unlock);
+    };
+
     const unlock = () => {
-      if (unlocked) return;
+      if (unlockedRef.current) return;
       const audio = audioRef.current;
       if (!audio) return;
       // Mute during unlock so user doesn't hear the brief play
@@ -55,10 +63,18 @@ export function useSignalAlarm() {
         audio.pause();
         audio.currentTime = 0;
         audio.volume = 1.0;
-        unlocked = true;
-        document.removeEventListener('click', unlock);
-        document.removeEventListener('touchstart', unlock);
-        document.removeEventListener('keydown', unlock);
+        unlockedRef.current = true;
+        removeListeners();
+        // If alarm was pending (first signal arrived before unlock), start it now
+        if (pendingAlarmRef.current !== null) {
+          const duration = pendingAlarmRef.current;
+          pendingAlarmRef.current = null;
+          audio.volume = 1.0;
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+          if (timerRef.current) clearTimeout(timerRef.current);
+          timerRef.current = setTimeout(() => { stopAlarm(); }, duration * 1000);
+        }
       }).catch(() => { audio.volume = 1.0; });
     };
 
@@ -66,10 +82,11 @@ export function useSignalAlarm() {
     document.addEventListener('touchstart', unlock);
     document.addEventListener('keydown', unlock);
 
+    // Try immediate unlock — user activation from login click may still be valid
+    unlock();
+
     return () => {
-      document.removeEventListener('click', unlock);
-      document.removeEventListener('touchstart', unlock);
-      document.removeEventListener('keydown', unlock);
+      removeListeners();
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -91,7 +108,10 @@ export function useSignalAlarm() {
     if (audio) {
       audio.volume = 1.0;
       audio.currentTime = 0;
-      audio.play().catch(() => {});
+      audio.play().catch(() => {
+        // Play failed (no user gesture yet) — queue alarm for next interaction
+        pendingAlarmRef.current = durationSeconds;
+      });
     }
 
     // Auto-stop after duration
