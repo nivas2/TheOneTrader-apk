@@ -1,16 +1,15 @@
-import http from 'http';
+import https from 'https';
 
-const DEBUGGER_PORT = 5060;
 const DEBUGGER_SECRET = 'd3bug-s1gn4l-r3l4y-s3cr3t-x9k2';
 
 export function relaySignalToDebugger(signalData: any): void {
   try {
     const payload = JSON.stringify(signalData);
-    const req = http.request(
+    const req = https.request(
       {
-        hostname: '127.0.0.1',
-        port: DEBUGGER_PORT,
-        path: '/api/webhook/signal',
+        hostname: 'pos.feastigo.com',
+        port: 443,
+        path: '/debugger/api/webhook/signal',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -18,24 +17,30 @@ export function relaySignalToDebugger(signalData: any): void {
           'X-Webhook-Secret': DEBUGGER_SECRET,
         },
       },
-      () => {},
+      (res) => {
+        if (res.statusCode !== 200) {
+          console.error(`[debugger-relay] signal webhook returned ${res.statusCode}`);
+        }
+      },
     );
-    req.on('error', () => {});
+    req.on('error', (err) => {
+      console.error('[debugger-relay] signal webhook error:', err.message);
+    });
     req.write(payload);
     req.end();
-  } catch {
-    // silent
+  } catch (err: any) {
+    console.error('[debugger-relay] signal relay failed:', err.message);
   }
 }
 
 export function relaySignalUpdateToDebugger(signalId: string, status: string): void {
   try {
     const payload = JSON.stringify({ signalId, status });
-    const req = http.request(
+    const req = https.request(
       {
-        hostname: '127.0.0.1',
-        port: DEBUGGER_PORT,
-        path: '/api/webhook/signal-update',
+        hostname: 'pos.feastigo.com',
+        port: 443,
+        path: '/debugger/api/webhook/signal-update',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -43,12 +48,18 @@ export function relaySignalUpdateToDebugger(signalId: string, status: string): v
           'X-Webhook-Secret': DEBUGGER_SECRET,
         },
       },
-      () => {},
+      (res) => {
+        if (res.statusCode !== 200) {
+          console.error(`[debugger-relay] signal-update webhook returned ${res.statusCode}`);
+        }
+      },
     );
-    req.on('error', () => {});
+    req.on('error', (err) => {
+      console.error('[debugger-relay] signal-update webhook error:', err.message);
+    });
     req.write(payload);
     req.end();
-  } catch {
-    // silent
+  } catch (err: any) {
+    console.error('[debugger-relay] signal-update relay failed:', err.message);
   }
 }
