@@ -6,10 +6,28 @@ import { useSocket } from '@/context/SocketContext';
 import { SOCKET_EVENTS, MarketIndex } from '@theonetrade/shared-types';
 
 const SOCKET_FALLBACK_TIMEOUT = 30_000; // 30 seconds
+const CACHE_KEY = 'theonetrade_market_indices';
+
+function loadCachedIndices(): MarketIndex[] {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.indices?.length > 0) return parsed.indices;
+    }
+  } catch {}
+  return [];
+}
+
+function saveCachedIndices(indices: MarketIndex[], lastUpdated: number) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ indices, lastUpdated }));
+  } catch {}
+}
 
 export default function MarqueeBanner() {
   const [warningText, setWarningText] = useState('');
-  const [indices, setIndices] = useState<MarketIndex[]>([]);
+  const [indices, setIndices] = useState<MarketIndex[]>(() => loadCachedIndices());
   const [marketOpen, setMarketOpen] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(0);
   const { socket } = useSocket();
@@ -22,16 +40,27 @@ export default function MarqueeBanner() {
     }).catch(() => {});
   }, []);
 
+  // Update indices and persist to localStorage
+  const updateIndices = (newIndices: MarketIndex[], ts?: number) => {
+    setIndices(newIndices);
+    const updateTs = ts || Date.now();
+    setLastUpdated(updateTs);
+    saveCachedIndices(newIndices, updateTs);
+  };
+
   // Fetch real market data via HTTP (initial load / fallback)
   const fetchViaHttp = () => {
-    const path = window.location.pathname;
-    const basePath = path.startsWith('/theonetrade') ? '/theonetrade' : '';
+    const pathname = window.location.pathname;
+    const basePath = pathname.startsWith('/theonetrade') ? '/theonetrade' : '';
     fetch(`${basePath}/api/market-data`)
       .then((res) => res.json())
       .then((res) => {
-        if (res.data && res.data.length > 0) {
-          setIndices(res.data);
+        // Backend returns { indices, marketOpen, lastUpdated }
+        const data = res.indices || res.data;
+        if (data && data.length > 0) {
+          updateIndices(data, res.lastUpdated);
         }
+        if (res.marketOpen !== undefined) setMarketOpen(res.marketOpen);
       })
       .catch(() => {});
   };
@@ -52,11 +81,10 @@ export default function MarqueeBanner() {
       lastUpdated?: number;
     }) => {
       if (payload.indices && payload.indices.length > 0) {
-        setIndices(payload.indices);
+        updateIndices(payload.indices, payload.lastUpdated);
         lastSocketUpdate.current = Date.now();
       }
       if (payload.marketOpen !== undefined) setMarketOpen(payload.marketOpen);
-      if (payload.lastUpdated) setLastUpdated(payload.lastUpdated);
     };
 
     socket.on(SOCKET_EVENTS.TICKER_UPDATE, handleTickerUpdate);
@@ -84,27 +112,13 @@ export default function MarqueeBanner() {
     return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
-  // Loading state — no data yet
+  // Loading state — no data from server AND no cached data
   if (indices.length === 0) {
-    // Check if market is closed (weekend or outside hours) to avoid perpetual "Loading..."
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const ist = new Date(now.getTime() + istOffset + now.getTimezoneOffset() * 60 * 1000);
-    const day = ist.getDay();
-    const minutes = ist.getHours() * 60 + ist.getMinutes();
-    const isWeekend = day === 0 || day === 6;
-    const isOutsideHours = minutes < 555 || minutes > 930;
-    const isClosed = isWeekend || isOutsideHours;
-
     return (
       <>
         <div className="bg-white border-b border-gray-100 overflow-hidden">
           <div className="py-2.5 flex items-center justify-center gap-2">
-            {isClosed ? (
-              <span className="text-sm text-gray-400">Market Closed</span>
-            ) : (
-              <span className="text-sm text-gray-400">Loading market data...</span>
-            )}
+            <span className="text-sm text-gray-400">Loading market data...</span>
           </div>
         </div>
         {warningText && (

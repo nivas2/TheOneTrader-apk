@@ -14,7 +14,12 @@ export async function GET() {
     }
 
     const payload = await res.json();
-    return NextResponse.json({ data: payload.indices || [] });
+    return NextResponse.json({
+      data: payload.indices || [],
+      indices: payload.indices || [],
+      marketOpen: payload.marketOpen,
+      lastUpdated: payload.lastUpdated,
+    });
   } catch {
     return NextResponse.json({ data: [] }, { status: 502 });
   }

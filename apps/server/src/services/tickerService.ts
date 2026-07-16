@@ -1,11 +1,13 @@
 import { Server as SocketServer } from 'socket.io';
 import { SOCKET_EVENTS, MarketIndex } from '@theonetrade/shared-types';
 import { generateSync } from 'otplib';
+import fs from 'fs';
+import path from 'path';
 
 // Angel One SmartAPI credentials
 const ANGEL_API_KEY = process.env.ANGEL_API_KEY || 'qr8ZFArf';
 const ANGEL_CLIENT_ID = process.env.ANGEL_CLIENT_ID || 'AAAN744037';
-const ANGEL_PIN = process.env.ANGEL_PIN || '1357';
+const ANGEL_PIN = process.env.ANGEL_PIN || '0987';
 const ANGEL_TOTP_SECRET = process.env.ANGEL_TOTP_SECRET || 'AFZCBEZAIBHY7OUORL2TE4HQ4Q';
 
 // Index tokens: token → { displayName, exchangeType }
@@ -28,11 +30,23 @@ const DISPLAY_ORDER = [
   'FINNIFTY', 'NIFTY 100', 'NIFTY 500', 'NIFTY SMALLCAP 100',
 ];
 
+// Cache file for persisting data across restarts
+const CACHE_FILE = path.join(__dirname, '..', '..', 'ticker-cache.json');
+
 let lastKnownData: MarketIndex[] = [];
 let socketIO: SocketServer | null = null;
 let wsConnected = false;
 let lastDataUpdate = 0;
 let tickCount = 0;
+
+// Login backoff state
+let loginFailCount = 0;
+let lastLoginFail = 0;
+const LOGIN_BACKOFF_BASE = 5 * 60_000; // 5 minutes base backoff
+
+// Cached session for REST calls (avoid re-login every time)
+let cachedSmartInstance: any = null;
+let sessionExpiry = 0;
 
 function formatPrice(value: number): string {
   return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -52,6 +66,49 @@ function isMarketOpen(): boolean {
   const minutes = ist.getHours() * 60 + ist.getMinutes();
   // 9:15 AM = 555 min, 3:30 PM = 930 min
   return minutes >= 555 && minutes <= 930;
+}
+
+// Persist data to file so it survives restarts
+function saveCache() {
+  try {
+    const data = { indices: lastKnownData, lastUpdated: lastDataUpdate, livePrices };
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(data));
+  } catch {}
+}
+
+function loadCache() {
+  try {
+    if (fs.existsSync(CACHE_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'));
+      if (raw.indices?.length > 0) {
+        lastKnownData = raw.indices;
+        lastDataUpdate = raw.lastUpdated || 0;
+        console.log(`[TickerService] Loaded ${lastKnownData.length} cached indices from disk`);
+      }
+      if (raw.livePrices) {
+        Object.assign(livePrices, raw.livePrices);
+      }
+    }
+  } catch {}
+}
+
+// Check if login backoff period has passed
+function canAttemptLogin(): boolean {
+  if (loginFailCount === 0) return true;
+  const backoffMs = Math.min(LOGIN_BACKOFF_BASE * Math.pow(2, loginFailCount - 1), 30 * 60_000); // Max 30 min
+  return Date.now() - lastLoginFail > backoffMs;
+}
+
+function onLoginSuccess() {
+  loginFailCount = 0;
+  lastLoginFail = 0;
+}
+
+function onLoginFail() {
+  loginFailCount++;
+  lastLoginFail = Date.now();
+  const nextRetryMs = Math.min(LOGIN_BACKOFF_BASE * Math.pow(2, loginFailCount - 1), 30 * 60_000);
+  console.log(`[TickerService] Login fail #${loginFailCount}, next retry in ${Math.round(nextRetryMs / 1000)}s`);
 }
 
 // Store live prices keyed by token
@@ -88,6 +145,7 @@ function broadcastToClients() {
   if (indices.length > 0) {
     lastKnownData = indices;
     lastDataUpdate = Date.now();
+    saveCache();
   }
   if (lastKnownData.length > 0) {
     socketIO.emit(SOCKET_EVENTS.TICKER_UPDATE, {
@@ -97,6 +155,28 @@ function broadcastToClients() {
       lastUpdated: lastDataUpdate,
     });
   }
+}
+
+async function getOrCreateSession(): Promise<any> {
+  // Reuse cached session if still valid (cache for 20 minutes)
+  if (cachedSmartInstance && Date.now() < sessionExpiry) {
+    return cachedSmartInstance;
+  }
+
+  const totp = generateSync({ secret: ANGEL_TOTP_SECRET });
+  const { SmartAPI: SmartAPIClass } = require('smartapi-javascript');
+  const smart = new SmartAPIClass({ api_key: ANGEL_API_KEY });
+  const session = await smart.generateSession(ANGEL_CLIENT_ID, ANGEL_PIN, totp);
+
+  if (!session?.data?.jwtToken) {
+    throw new Error(`SmartAPI login failed: ${JSON.stringify(session)}`);
+  }
+
+  cachedSmartInstance = smart;
+  sessionExpiry = Date.now() + 20 * 60_000; // Cache for 20 minutes
+  onLoginSuccess();
+  console.log('[TickerService] Angel One login successful');
+  return smart;
 }
 
 async function loginAndGetTokens(): Promise<{ jwtToken: string; feedToken: string }> {
@@ -110,6 +190,7 @@ async function loginAndGetTokens(): Promise<{ jwtToken: string; feedToken: strin
     throw new Error(`SmartAPI login failed: ${JSON.stringify(session)}`);
   }
 
+  onLoginSuccess();
   console.log('[TickerService] Angel One login successful');
   return {
     jwtToken: session.data.jwtToken,
@@ -197,23 +278,33 @@ function connectWebSocket(jwtToken: string, feedToken: string) {
 }
 
 async function startWebSocket() {
+  if (!canAttemptLogin()) {
+    const waitMs = Math.min(LOGIN_BACKOFF_BASE * Math.pow(2, loginFailCount - 1), 30 * 60_000);
+    const remainMs = waitMs - (Date.now() - lastLoginFail);
+    console.log(`[TickerService] Skipping WS login (backoff), retry in ${Math.round(remainMs / 1000)}s`);
+    setTimeout(() => startWebSocket(), remainMs + 1000);
+    return;
+  }
+
   try {
     const { jwtToken, feedToken } = await loginAndGetTokens();
     connectWebSocket(jwtToken, feedToken);
   } catch (err) {
+    onLoginFail();
     console.error('[TickerService] Login failed:', (err as Error).message);
-    // Retry login after 60 seconds
-    setTimeout(() => startWebSocket(), 60_000);
+    const backoffMs = Math.min(LOGIN_BACKOFF_BASE * Math.pow(2, loginFailCount - 1), 30 * 60_000);
+    setTimeout(() => startWebSocket(), backoffMs);
   }
 }
 
 // Fetch data via SmartAPI REST marketData endpoint
 async function fetchViaREST() {
+  if (!canAttemptLogin()) {
+    return; // Skip if in backoff period
+  }
+
   try {
-    const totp = generateSync({ secret: ANGEL_TOTP_SECRET });
-    const { SmartAPI: SmartAPIClass } = require('smartapi-javascript');
-    const smart = new SmartAPIClass({ api_key: ANGEL_API_KEY });
-    await smart.generateSession(ANGEL_CLIENT_ID, ANGEL_PIN, totp);
+    const smart = await getOrCreateSession();
 
     const nseTokens = Object.entries(INDEX_CONFIG)
       .filter(([, c]) => c.exchange === 1)
@@ -246,9 +337,18 @@ async function fetchViaREST() {
       console.log(`[TickerService] REST fetched ${count} indices`);
       broadcastToClients();
     } else {
-      console.log('[TickerService] REST response:', JSON.stringify(response?.data || response).substring(0, 200));
+      // Session might be stale, clear cache to force re-login next time
+      const errMsg = JSON.stringify(response?.data || response).substring(0, 200);
+      console.log('[TickerService] REST response:', errMsg);
+      if (errMsg.includes('Token missing') || errMsg.includes('Invalid Token')) {
+        cachedSmartInstance = null;
+        sessionExpiry = 0;
+      }
     }
   } catch (err) {
+    onLoginFail();
+    cachedSmartInstance = null;
+    sessionExpiry = 0;
     console.error('[TickerService] REST error:', (err as Error).message);
   }
 }
@@ -266,21 +366,46 @@ export function startTickerBroadcast(io: SocketServer): void {
   socketIO = io;
   console.log('[TickerService] Started — connecting to Angel One SmartAPI');
 
+  // Load cached data from disk (survives restarts)
+  loadCache();
+
+  // Broadcast cached data immediately to any connected clients
+  if (lastKnownData.length > 0) {
+    console.log(`[TickerService] Broadcasting ${lastKnownData.length} cached indices`);
+    io.emit(SOCKET_EVENTS.TICKER_UPDATE, {
+      indices: lastKnownData,
+      timestamp: Date.now(),
+      marketOpen: isMarketOpen(),
+      lastUpdated: lastDataUpdate,
+    });
+  }
+
   // Fetch initial data via REST, then connect WebSocket (sequential to avoid TOTP conflict)
   fetchViaREST().then(() => {
     // Wait 35 seconds for new TOTP window before WebSocket login
     setTimeout(() => startWebSocket(), 35_000);
   });
 
-  // ALWAYS refresh via REST every 60s — serves as ground truth to correct stale WebSocket close prices
+  // Refresh via REST every 60s during market hours, every 5 min outside
   setInterval(() => {
-    console.log('[TickerService] Periodic REST refresh');
-    fetchViaREST();
+    if (isMarketOpen()) {
+      fetchViaREST();
+    }
   }, 60_000);
+
+  // Also do a less frequent refresh when market is closed (every 5 min)
+  setInterval(() => {
+    if (!isMarketOpen() && lastKnownData.length === 0) {
+      console.log('[TickerService] Market closed, attempting data fetch for cache');
+      fetchViaREST();
+    }
+  }, 5 * 60_000);
 
   // Re-login every 6 hours to refresh tokens (Angel One tokens expire)
   setInterval(() => {
     console.log('[TickerService] Refreshing Angel One session');
+    cachedSmartInstance = null;
+    sessionExpiry = 0;
     startWebSocket();
   }, 6 * 60 * 60_000);
 }
