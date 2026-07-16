@@ -54,6 +54,14 @@ const updateStatusSchema = z.object({
 // Admin: create signal
 router.post('/', authMiddleware, adminGuard, validate(createSignalSchema), async (req: AuthRequest, res: Response) => {
   try {
+    // Validate segment against config
+    const config = await Config.findOne();
+    const validSegments = config?.segments?.map((s) => s.key) || [];
+    if (!validSegments.includes(req.body.segment)) {
+      res.status(400).json({ success: false, error: `Invalid segment "${req.body.segment}". Valid segments: ${validSegments.join(', ')}` });
+      return;
+    }
+
     // Sub-admin segment restriction
     if (req.userRole === 'SUBADMIN') {
       const user = await User.findById(req.userId);

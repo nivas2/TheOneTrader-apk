@@ -9,6 +9,7 @@ import { Notification } from '../models/Notification';
 import { sendPushToTokens, sendPushToAdmins, logNotification } from '../services/pushService';
 import { NOTIFICATION_TEMPLATES, renderTemplate } from '../services/notificationTemplates';
 import { NOTIFICATION_TYPES } from '@theonetrade/shared-types';
+import { Config } from '../models/Config';
 
 const router = Router();
 
@@ -84,10 +85,14 @@ router.post('/send', authMiddleware, adminGuard, validate(sendSchema), async (re
         DAILY: 'One Day', WEEKLY: 'One Week', MONTHLY: 'Monthly',
         QUARTERLY: 'Quarterly', HALF_YEARLY: 'Half Yearly', YEARLY: 'Yearly',
       };
-      const SEGMENT_LABELS: Record<string, string> = {
-        INTRADAY: 'Intraday', FANDO: 'F&O', MTF: 'MTF',
-        LONGTERM: 'Long Term', SHORTTERM: 'Short Term',
-      };
+      // Build segment labels dynamically from config
+      const config = await Config.findOne();
+      const SEGMENT_LABELS: Record<string, string> = {};
+      if (config?.segments) {
+        for (const seg of config.segments) {
+          SEGMENT_LABELS[seg.key] = seg.label;
+        }
+      }
 
       // Send personalized message per user
       const pushData = {

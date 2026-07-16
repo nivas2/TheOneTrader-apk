@@ -58,6 +58,14 @@ router.post(
         return;
       }
 
+      // Validate segment against config
+      const config = await Config.findOne();
+      const validSegments = config?.segments?.map((s) => s.key) || [];
+      if (!validSegments.includes(segment)) {
+        res.status(400).json({ success: false, error: `Invalid segment "${segment}". Valid segments: ${validSegments.join(', ')}` });
+        return;
+      }
+
       if (!utrId || !utrId.trim()) {
         res.status(400).json({ success: false, error: 'UTR / Reference ID is required' });
         return;

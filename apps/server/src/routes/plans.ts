@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import { adminGuard, mainAdminGuard } from '../middleware/adminGuard';
 import { Plan } from '../models/Plan';
+import { Config } from '../models/Config';
 
 const router = Router();
 
@@ -28,6 +29,16 @@ router.get('/', authMiddleware, adminGuard, async (_req: AuthRequest, res: Respo
 // Admin: create plan
 router.post('/', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
+    // Validate segment against config
+    if (req.body.segment) {
+      const config = await Config.findOne();
+      const validSegments = config?.segments?.map((s) => s.key) || [];
+      if (!validSegments.includes(req.body.segment)) {
+        res.status(400).json({ success: false, error: `Invalid segment "${req.body.segment}". Valid segments: ${validSegments.join(', ')}` });
+        return;
+      }
+    }
+
     const plan = await Plan.create(req.body);
     res.status(201).json({ success: true, data: plan });
   } catch (error: any) {
@@ -38,6 +49,16 @@ router.post('/', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: R
 // Admin: update plan
 router.put('/:id', authMiddleware, mainAdminGuard, async (req: AuthRequest, res: Response) => {
   try {
+    // Validate segment against config if being updated
+    if (req.body.segment) {
+      const config = await Config.findOne();
+      const validSegments = config?.segments?.map((s) => s.key) || [];
+      if (!validSegments.includes(req.body.segment)) {
+        res.status(400).json({ success: false, error: `Invalid segment "${req.body.segment}". Valid segments: ${validSegments.join(', ')}` });
+        return;
+      }
+    }
+
     const plan = await Plan.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!plan) {
       return res.status(404).json({ success: false, error: 'Plan not found' });

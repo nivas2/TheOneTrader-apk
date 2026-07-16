@@ -30,7 +30,6 @@ const SubscriptionSchema = new Schema<ISubscriptionDocument>(
     },
     segment: {
       type: String,
-      enum: ['INTRADAY', 'FANDO', 'MTF', 'LONGTERM', 'SHORTTERM'],
       required: true,
     },
     amount: { type: Number, default: 0 },
